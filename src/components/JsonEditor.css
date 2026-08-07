@@ -1,0 +1,48 @@
+.json-editor {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  background-color: var(--surface-1);
+}
+
+.cm-editor {
+  height: 100% !important;
+  background-color: var(--surface-1) !important;
+  color: var(--ink) !important;
+}
+
+.cm-editor.cm-focused {
+  outline: none !important;
+}
+
+.cm-scroller {
+  font-family: var(--font-mono) !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+.cm-gutters {
+  background-color: var(--surface-1) !important;
+  color: var(--ink-tertiary) !important;
+  border-right: 1px solid var(--hairline) !important;
+  padding-right: 4px;
+}
+
+.cm-activeLineGutter {
+  background-color: var(--surface-2) !important;
+  color: var(--ink) !important;
+}
+
+.cm-activeLine {
+  background-color: rgba(255, 255, 255, 0.025) !important;
+}
+
+.cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection {
+  background-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+.cm-cursor {
+  border-left-color: var(--primary) !important;
+}
+

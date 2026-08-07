@@ -1,0 +1,184 @@
+.sidebar {
+  width: 230px;
+  flex-shrink: 0;
+  background: var(--surface-1);
+  border-right: 1px solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+  transition: width 150ms var(--ease-out);
+  overflow: hidden;
+  user-select: none;
+}
+
+.sidebar.collapsed {
+  width: 0px;
+  border-right: none;
+}
+
+.sidebar-header {
+  height: 40px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--hairline);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-subtle);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.snapshot-add {
+  display: flex;
+  gap: 6px;
+}
+
+.snapshot-input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-sm);
+  color: var(--ink);
+  padding: 0 8px;
+  font-size: 11px;
+  outline: none;
+  transition: border-color 120ms var(--ease-out);
+}
+
+.snapshot-input::placeholder {
+  color: var(--ink-subtle);
+}
+
+.snapshot-input:focus {
+  border-color: var(--primary);
+}
+
+.snapshot-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.snapshot-empty {
+  padding: 24px 8px;
+  text-align: center;
+  color: var(--ink-subtle);
+  font-size: 11.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.snapshot-card {
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-sm);
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 120ms var(--ease-out), border-color 120ms var(--ease-out);
+}
+
+.snapshot-card:hover {
+  background: var(--surface-3);
+  border-color: var(--hairline-strong);
+}
+
+.snapshot-card.active {
+  background: rgba(76, 120, 221, 0.08);
+  border-color: rgba(76, 120, 221, 0.35);
+  border-left: 2px solid var(--primary);
+}
+
+.snapshot-active-badge {
+  font-size: 9px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  padding: 1px 4px;
+  border-radius: var(--rounded-xs);
+  background: rgba(76, 120, 221, 0.15);
+  color: var(--primary-hover);
+  border: 1px solid rgba(76, 120, 221, 0.25);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.snapshot-card:active {
+  transform: scale(0.99);
+}
+
+.snapshot-title {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.snapshot-sub {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--ink-subtle);
+  margin-top: 1px;
+}
+
+.snapshot-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0.6;
+  transition: opacity 100ms var(--ease-out);
+}
+
+.snapshot-card:hover .snapshot-actions {
+  opacity: 1;
+}
+
+.snapshot-action-btn {
+  width: 22px !important;
+  height: 22px !important;
+  padding: 0 !important;
+}
+
+.snapshot-action-btn.delete-btn:hover {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 44px;
+    left: 0;
+    bottom: 0;
+    z-index: 90;
+    width: 240px;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.5);
+  }
+
+  .sidebar.collapsed {
+    width: 0px;
+    box-shadow: none;
+  }
+}
+
+

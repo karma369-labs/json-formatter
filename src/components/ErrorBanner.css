@@ -1,0 +1,46 @@
+.error-banner {
+  padding: 8px 16px;
+  background: var(--danger-bg);
+  border-bottom: 1px solid rgba(244, 63, 94, 0.3);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideDown 150ms var(--ease-out);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-badge-pos {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 2px 8px;
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  border-radius: var(--rounded-sm);
+  flex-shrink: 0;
+}
+
+.error-message-text {
+  flex: 1;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 400;
+}
+
