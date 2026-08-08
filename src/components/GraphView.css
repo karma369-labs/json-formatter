@@ -1,0 +1,159 @@
+.graph-view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--surface-1);
+}
+
+.graph-toolbar {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--hairline);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-1);
+  flex-shrink: 0;
+}
+
+.graph-canvas {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+  padding: 28px;
+  background-image: radial-gradient(var(--hairline) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.graph-edges {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.graph-columns {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 64px;
+  width: max-content;
+}
+
+.graph-column {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  flex-shrink: 0;
+}
+
+.graph-card {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-md);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.graph-card-header {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  background: var(--surface-3);
+  border-bottom: 1px solid var(--hairline);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.graph-card-header .tree-key {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.graph-card-copy {
+  margin-left: auto !important;
+  width: 20px !important;
+  height: 20px !important;
+  padding: 0 !important;
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.graph-card:hover .graph-card-copy {
+  opacity: 1;
+}
+
+.graph-card-body {
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 4px;
+  gap: 1px;
+}
+
+.graph-card-empty {
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--ink-subtle);
+  font-style: italic;
+}
+
+.graph-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: var(--rounded-xs);
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.graph-row .tree-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.graph-row-toggle {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 100ms var(--ease-out);
+}
+
+.graph-row-toggle:hover {
+  background: var(--surface-3);
+}
+
+.graph-row-toggle.active {
+  background: var(--overlay-weak);
+}
+
+.graph-row-connector {
+  margin-left: auto;
+  display: inline-flex;
+  color: var(--ink-tertiary);
+  flex-shrink: 0;
+  transition: color 100ms var(--ease-out);
+}
+
+.graph-row-toggle:hover .graph-row-connector,
+.graph-row-toggle.active .graph-row-connector {
+  color: var(--primary);
+}

@@ -45,7 +45,7 @@ const obsidianTheme = EditorView.theme(
       color: 'var(--ink)',
     },
     '.cm-activeLine': {
-      backgroundColor: 'rgba(255, 255, 255, 0.02)',
+      backgroundColor: 'var(--overlay-medium)',
     },
     '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection': {
       backgroundColor: 'rgba(94, 106, 210, 0.3) !important',

@@ -6,6 +6,7 @@ import {
   ArrowUpDown,
   Code2,
   Network,
+  Workflow,
   Columns,
   FolderOpen,
   Wrench,
@@ -13,6 +14,8 @@ import {
   FileJson,
   AlertTriangle,
   CheckCircle2,
+  Shuffle,
+  GitCompare,
 } from 'lucide-react';
 import './Toolbar.css';
 import type { IndentOption, ParseError } from '../lib/jsonParser';
@@ -33,6 +36,8 @@ interface ToolbarProps {
   onViewModeChange: (mode: ViewMode) => void;
   onFileUpload: (content: string, fileName: string) => void;
   onLoadSample?: (content?: string) => void;
+  onOpenConvert?: () => void;
+  onOpenCompare?: () => void;
 }
 
 const INDENT_OPTIONS: { value: IndentOption; label: string }[] = [
@@ -55,6 +60,8 @@ export function Toolbar({
   onViewModeChange,
   onFileUpload,
   onLoadSample,
+  onOpenConvert,
+  onOpenCompare,
 }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showSamplesMenu, setShowSamplesMenu] = useState(false);
@@ -216,6 +223,28 @@ export function Toolbar({
           <kbd className="toolbar-kbd">{modKey}S</kbd>
         </button>
 
+        <button
+          type="button"
+          className="button-secondary"
+          onClick={onOpenConvert}
+          disabled={!hasContent || !!error || !onOpenConvert}
+          title="Convert JSON to XML, CSV, TSV, YAML, or an escaped string"
+        >
+          <Shuffle size={13} />
+          <span>Convert</span>
+        </button>
+
+        <button
+          type="button"
+          className="button-secondary"
+          onClick={onOpenCompare}
+          disabled={!hasContent || !!error || !onOpenCompare}
+          title="Compare current JSON against another document"
+        >
+          <GitCompare size={13} />
+          <span>Compare</span>
+        </button>
+
         <div className="select-wrapper" title="Indent width">
           <select className="toolbar-select" value={indent} onChange={handleIndentChange} aria-label="Indent width">
             {INDENT_OPTIONS.map((opt) => (
@@ -271,6 +300,17 @@ export function Toolbar({
         >
           <Network size={13} />
           <span>Tree</span>
+        </button>
+
+        <button
+          type="button"
+          className={`pricing-tab${viewMode === 'graph' ? ' selected' : ''}`}
+          onClick={() => onViewModeChange('graph')}
+          disabled={!hasContent || !!error}
+          title="Graph Explorer View"
+        >
+          <Workflow size={13} />
+          <span>Graph</span>
         </button>
 
         <button

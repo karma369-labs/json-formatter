@@ -13,7 +13,7 @@ import {
 } from '../lib/jsonParser';
 import { loadCurrentDoc, saveCurrentDoc } from '../lib/storage';
 
-export type ViewMode = 'text' | 'tree' | 'split';
+export type ViewMode = 'text' | 'tree' | 'graph' | 'split';
 
 export interface JsonEditorState {
   raw: string;

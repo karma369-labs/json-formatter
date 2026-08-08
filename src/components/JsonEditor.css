@@ -35,7 +35,7 @@
 }
 
 .cm-activeLine {
-  background-color: rgba(255, 255, 255, 0.025) !important;
+  background-color: var(--overlay-medium) !important;
 }
 
 .cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection {

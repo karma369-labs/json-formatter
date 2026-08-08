@@ -33,7 +33,7 @@
   font-weight: 500;
   line-height: 1;
   color: var(--ink-subtle);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--overlay-weak);
   border: 1px solid var(--hairline);
   border-radius: var(--rounded-xs);
   margin-left: 2px;

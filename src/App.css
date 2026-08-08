@@ -1,4 +1,5 @@
-:root {
+:root,
+:root[data-theme='dark'] {
   --canvas: #0f1013;
   --surface-1: #16181d;
   --surface-2: #1e222b;
@@ -32,6 +33,53 @@
   --token-null: #c678dd;
   --token-bracket: #7f8c9d;
 
+  --overlay-weak: rgba(255, 255, 255, 0.05);
+  --overlay-medium: rgba(255, 255, 255, 0.025);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+}
+
+:root[data-theme='light'] {
+  --canvas: #f6f7f9;
+  --surface-1: #ffffff;
+  --surface-2: #f1f3f6;
+  --surface-3: #e6e9ef;
+  --surface-4: #d9dde5;
+
+  --hairline: rgba(15, 23, 42, 0.09);
+  --hairline-strong: rgba(15, 23, 42, 0.18);
+  --hairline-subtle: rgba(15, 23, 42, 0.04);
+
+  --primary: #3b65c4;
+  --primary-hover: #2f52a0;
+  --primary-active: #24407f;
+  --on-primary: #ffffff;
+
+  --ink: #1a1d24;
+  --ink-muted: #565f6f;
+  --ink-subtle: #7a8494;
+  --ink-tertiary: #9aa3b2;
+
+  --semantic-success: #059669;
+  --semantic-success-bg: rgba(5, 150, 105, 0.1);
+  --danger: #dc2626;
+  --danger-bg: rgba(220, 38, 38, 0.08);
+  --danger-hover: #b91c1c;
+
+  --token-key: #c2185b;
+  --token-string: #2e7d32;
+  --token-number: #1565c0;
+  --token-boolean: #b26a00;
+  --token-null: #8e24aa;
+  --token-bracket: #5c6470;
+
+  --overlay-weak: rgba(15, 23, 42, 0.05);
+  --overlay-medium: rgba(15, 23, 42, 0.035);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.15);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.28);
+}
+
+:root {
   --font-display: 'Inter', -apple-system, system-ui, sans-serif;
   --font-text: 'Inter', -apple-system, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
@@ -61,6 +109,7 @@ html, body, #root {
   line-height: 1.5;
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
 }
 
 button, input, select {
@@ -84,12 +133,12 @@ button, input, select {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--scrollbar-thumb);
   border-radius: var(--rounded-xs);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--scrollbar-thumb-hover);
 }
 
 .button-primary {

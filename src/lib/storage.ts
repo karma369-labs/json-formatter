@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 
 const CURRENT_DOC_KEY = 'jsonfmt:current-doc';
 const SNAPSHOTS_KEY = 'jsonfmt:snapshots';
+const THEME_KEY = 'jsonfmt:theme';
 const MAX_SNAPSHOTS = 50;
 
 export interface Snapshot {
@@ -55,5 +56,21 @@ export function deleteSnapshot(id: string): void {
     localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(next));
   } catch {
     // no-op
+  }
+}
+
+export function loadTheme(): string | null {
+  try {
+    return localStorage.getItem(THEME_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function saveTheme(theme: string): void {
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // not critical, fail silently
   }
 }

@@ -1,0 +1,233 @@
+.compare-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 24px;
+}
+
+.compare-modal {
+  width: 100%;
+  max-width: 920px;
+  height: min(680px, 100%);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--rounded-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.compare-modal-header {
+  height: 44px;
+  padding: 0 8px 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.compare-modal-panes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 180px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.compare-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.compare-pane:first-child {
+  border-right: 1px solid var(--hairline);
+}
+
+.compare-pane-header {
+  height: 30px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-subtle);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--hairline);
+  flex-shrink: 0;
+}
+
+.compare-pane-preview,
+.compare-pane-input {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  resize: none;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.compare-pane-input {
+  outline: none;
+}
+
+.compare-pane-input::placeholder {
+  color: var(--ink-subtle);
+}
+
+.compare-pane-error {
+  padding: 6px 10px;
+  font-size: 10.5px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-top: 1px solid var(--hairline);
+  flex-shrink: 0;
+}
+
+.compare-modal-results {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--surface-1);
+}
+
+.compare-empty-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  color: var(--ink-subtle);
+  font-size: 12px;
+}
+
+.diff-op-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+}
+
+.diff-op {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: var(--rounded-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.diff-op + .diff-op {
+  margin-top: 1px;
+}
+
+.diff-op-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: 68px;
+  flex-shrink: 0;
+  font-family: var(--font-text);
+  font-weight: 600;
+  font-size: 10.5px;
+}
+
+.diff-op-path {
+  flex-shrink: 0;
+  color: var(--ink-muted);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diff-op-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.diff-op-arrow {
+  color: var(--ink-subtle);
+  flex-shrink: 0;
+}
+
+.diff-op-old {
+  color: var(--danger);
+  text-decoration: line-through;
+  text-decoration-color: var(--danger);
+  opacity: 0.85;
+}
+
+.diff-op-new {
+  color: var(--semantic-success);
+}
+
+.diff-op.diff-add {
+  background: var(--semantic-success-bg);
+}
+
+.diff-op.diff-remove {
+  background: var(--danger-bg);
+}
+
+.diff-op.diff-change {
+  background: var(--overlay-weak);
+}
+
+.diff-add .diff-op-badge {
+  color: var(--semantic-success);
+}
+
+.diff-remove .diff-op-badge {
+  color: var(--danger);
+}
+
+.diff-change .diff-op-badge {
+  color: var(--primary);
+}
+
+.compare-modal-footer {
+  height: 38px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--hairline);
+  flex-shrink: 0;
+}
+
+.compare-summary {
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  font-weight: 600;
+}

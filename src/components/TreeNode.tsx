@@ -185,11 +185,18 @@ export function TreeNode({ keyName, value, depth, parentPath = '$', parentIsArra
 
   return (
     <div className="tree-branch">
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         className="tree-row tree-toggle"
         style={indent}
         onClick={() => setCollapsed((c) => !c)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setCollapsed((c) => !c);
+          }
+        }}
         aria-expanded={!effectiveCollapsed}
         aria-label={keyName !== undefined ? `${keyName}: ${type} with ${summary}` : `${type} with ${summary}`}
       >
@@ -237,7 +244,7 @@ export function TreeNode({ keyName, value, depth, parentPath = '$', parentIsArra
             )}
           </button>
         </div>
-      </button>
+      </div>
 
       {!effectiveCollapsed ? (
         <div className="tree-children">
