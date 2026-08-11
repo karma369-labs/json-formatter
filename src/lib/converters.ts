@@ -1,6 +1,6 @@
-// Pure JSON -> {XML, CSV, TSV, YAML, escaped string} converters. No UI, no DOM.
+// Pure JSON -> {XML, CSV, TSV, YAML, escaped string, JSON Schema, TypeScript} converters. No UI, no DOM.
 
-export type ConverterFormat = 'xml' | 'csv' | 'tsv' | 'yaml' | 'escape' | 'unescape';
+export type ConverterFormat = 'xml' | 'csv' | 'tsv' | 'yaml' | 'escape' | 'unescape' | 'schema' | 'typescript';
 
 export interface ConvertResult {
   output: string;
@@ -197,6 +197,129 @@ export function unescapeJsonString(value: unknown): string {
   return value;
 }
 
+// ---------- JSON Schema ----------
+
+function inferSchema(value: unknown): Record<string, unknown> {
+  if (value === null) return { type: 'null' };
+  if (Array.isArray(value)) {
+    if (value.length === 0) return { type: 'array', items: {} };
+    return { type: 'array', items: mergeSchemas(value.map(inferSchema)) };
+  }
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>);
+    const properties: Record<string, unknown> = {};
+    const required: string[] = [];
+    for (const [k, v] of entries) {
+      properties[k] = inferSchema(v);
+      required.push(k);
+    }
+    const schema: Record<string, unknown> = { type: 'object', properties };
+    if (required.length > 0) schema.required = required;
+    return schema;
+  }
+  if (typeof value === 'number') return { type: Number.isInteger(value) ? 'integer' : 'number' };
+  if (typeof value === 'boolean') return { type: 'boolean' };
+  return { type: 'string' };
+}
+
+function mergeSchemas(schemas: Record<string, unknown>[]): Record<string, unknown> {
+  const types = Array.from(new Set(schemas.map((s) => s.type as string)));
+
+  if (types.length === 1 && types[0] === 'object') {
+    const allKeys = new Set<string>();
+    schemas.forEach((s) => Object.keys((s.properties as Record<string, unknown>) ?? {}).forEach((k) => allKeys.add(k)));
+
+    const properties: Record<string, unknown> = {};
+    const required: string[] = [];
+    for (const key of allKeys) {
+      const propSchemas = schemas
+        .filter((s) => (s.properties as Record<string, unknown>)?.[key] !== undefined)
+        .map((s) => (s.properties as Record<string, unknown>)[key] as Record<string, unknown>);
+      properties[key] = mergeSchemas(propSchemas);
+      if (propSchemas.length === schemas.length) required.push(key);
+    }
+
+    const merged: Record<string, unknown> = { type: 'object', properties };
+    if (required.length > 0) merged.required = required;
+    return merged;
+  }
+
+  if (types.length === 1) return schemas[0];
+  return { type: types };
+}
+
+export function jsonToSchema(value: unknown, title = 'Root'): string {
+  const schema = { $schema: 'http://json-schema.org/draft-07/schema#', title, ...inferSchema(value) };
+  return `${JSON.stringify(schema, null, 2)}\n`;
+}
+
+// ---------- TypeScript ----------
+
+interface TsGenContext {
+  interfaces: Map<string, string>;
+  usedNames: Set<string>;
+}
+
+function toPascalCase(str: string): string {
+  const cleaned = str.replace(/[^a-zA-Z0-9]+(.)?/g, (_, c: string | undefined) => (c ? c.toUpperCase() : ''));
+  const capitalized = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  return capitalized || 'Value';
+}
+
+function uniqueTsName(base: string, ctx: TsGenContext): string {
+  let name = base;
+  let i = 2;
+  while (ctx.usedNames.has(name)) {
+    name = `${base}${i}`;
+    i++;
+  }
+  ctx.usedNames.add(name);
+  return name;
+}
+
+function tsPropName(key: string): string {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key) ? key : JSON.stringify(key);
+}
+
+function tsTypeOf(value: unknown, nameHint: string, ctx: TsGenContext): string {
+  if (value === null || value === undefined) return 'null';
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 'unknown[]';
+    const elementTypes = Array.from(new Set(value.map((v) => tsTypeOf(v, `${nameHint}Item`, ctx))));
+    const elementType = elementTypes.length === 1 ? elementTypes[0] : `(${elementTypes.join(' | ')})`;
+    return `${elementType}[]`;
+  }
+  if (typeof value === 'object') return emitTsInterface(value as Record<string, unknown>, nameHint, ctx);
+  if (typeof value === 'number') return 'number';
+  if (typeof value === 'boolean') return 'boolean';
+  return 'string';
+}
+
+function emitTsInterface(obj: Record<string, unknown>, nameHint: string, ctx: TsGenContext): string {
+  const name = uniqueTsName(toPascalCase(nameHint), ctx);
+  const entries = Object.entries(obj);
+  const body = entries.length === 0
+    ? '{}'
+    : `{\n${entries.map(([k, v]) => `  ${tsPropName(k)}: ${tsTypeOf(v, k, ctx)};`).join('\n')}\n}`;
+  ctx.interfaces.set(name, `interface ${name} ${body}`);
+  return name;
+}
+
+export function jsonToTypeScript(value: unknown, rootName = 'Root'): string {
+  const ctx: TsGenContext = { interfaces: new Map(), usedNames: new Set() };
+  let rootDecl = '';
+
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    emitTsInterface(value as Record<string, unknown>, rootName, ctx);
+  } else {
+    const t = tsTypeOf(value, rootName, ctx);
+    rootDecl = `type ${toPascalCase(rootName)} = ${t};\n`;
+  }
+
+  const blocks = [...Array.from(ctx.interfaces.values()), rootDecl].filter(Boolean);
+  return `${blocks.join('\n\n')}\n`;
+}
+
 // ---------- Dispatcher ----------
 
 export function convertJson(format: ConverterFormat, raw: string, parsed: unknown): ConvertResult {
@@ -213,5 +336,9 @@ export function convertJson(format: ConverterFormat, raw: string, parsed: unknow
       return { output: jsonToEscapedString(raw), fileExtension: 'txt', mimeType: 'text/plain' };
     case 'unescape':
       return { output: unescapeJsonString(parsed), fileExtension: 'txt', mimeType: 'text/plain' };
+    case 'schema':
+      return { output: jsonToSchema(parsed), fileExtension: 'json', mimeType: 'application/schema+json' };
+    case 'typescript':
+      return { output: jsonToTypeScript(parsed), fileExtension: 'ts', mimeType: 'text/typescript' };
   }
 }

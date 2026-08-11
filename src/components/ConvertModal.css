@@ -1,12 +1,19 @@
 .convert-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 200;
   padding: 24px;
+  animation: backdropFadeIn 140ms var(--ease-out);
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .convert-modal {
@@ -14,17 +21,29 @@
   max-width: 760px;
   height: min(600px, 100%);
   background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--hairline-strong);
   border-radius: var(--rounded-lg);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: modalPopIn 160ms var(--ease-out);
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .convert-modal-header {
   height: 44px;
-  padding: 0 8px 0 16px;
+  padding: 0 12px 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -67,7 +86,7 @@
 }
 
 .convert-tab.selected {
-  background: var(--surface-3);
+  background: var(--surface-2);
   color: var(--primary);
   border-color: var(--hairline-strong);
 }

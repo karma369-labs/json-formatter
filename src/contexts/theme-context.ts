@@ -1,11 +1,11 @@
-import { createContext } from 'react';
+import { createContext, type MouseEvent as ReactMouseEvent } from 'react';
 import { loadTheme } from '../lib/storage';
 
 export type Theme = 'dark' | 'light';
 
 export interface ThemeContextValue {
   theme: Theme;
-  toggleTheme: () => void;
+  toggleTheme: (event?: ReactMouseEvent | MouseEvent | { clientX: number; clientY: number }) => void;
 }
 
 export const ThemeContext = createContext<ThemeContextValue | null>(null);

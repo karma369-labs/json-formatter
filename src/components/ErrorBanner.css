@@ -1,13 +1,14 @@
 .error-banner {
-  padding: 8px 16px;
+  padding: 6px 14px;
   background: var(--danger-bg);
-  border-bottom: 1px solid rgba(244, 63, 94, 0.3);
+  border-bottom: 1px solid rgba(244, 63, 94, 0.25);
   color: var(--danger);
   font-family: var(--font-mono);
   font-size: 11px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
   animation: slideDown 150ms var(--ease-out);
 }
 
@@ -25,13 +26,13 @@
 .error-badge-pos {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-weight: 600;
   white-space: nowrap;
-  padding: 2px 8px;
-  background: rgba(244, 63, 94, 0.15);
+  padding: 2px 7px;
+  background: rgba(244, 63, 94, 0.16);
   border: 1px solid rgba(244, 63, 94, 0.3);
-  border-radius: var(--rounded-sm);
+  border-radius: var(--rounded-xs);
   flex-shrink: 0;
 }
 

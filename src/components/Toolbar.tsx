@@ -28,12 +28,14 @@ interface ToolbarProps {
   error: ParseError | null;
   hasContent: boolean;
   viewMode: ViewMode;
+  splitView: boolean;
   onIndentChange: (indent: IndentOption) => void;
   onFormat: () => void;
   onMinify: () => void;
   onSortKeys: () => void;
   onRepair: () => void;
   onViewModeChange: (mode: ViewMode) => void;
+  onSplitViewChange: (split: boolean) => void;
   onFileUpload: (content: string, fileName: string) => void;
   onLoadSample?: (content?: string) => void;
   onOpenConvert?: () => void;
@@ -52,12 +54,14 @@ export function Toolbar({
   error,
   hasContent,
   viewMode,
+  splitView,
   onIndentChange,
   onFormat,
   onMinify,
   onSortKeys,
   onRepair,
   onViewModeChange,
+  onSplitViewChange,
   onFileUpload,
   onLoadSample,
   onOpenConvert,
@@ -271,7 +275,7 @@ export function Toolbar({
             ) : (
               <span className="status-badge status-valid" title="Valid JSON structure">
                 <CheckCircle2 size={11} />
-                <span>Valid JSON</span>
+                <span>Valid</span>
               </span>
             )}
           </div>
@@ -280,10 +284,10 @@ export function Toolbar({
       ) : null}
 
       {/* View Mode Selector Tabs */}
-      <div className="pricing-tab-group" role="group" aria-label="View Mode">
+      <div className="view-mode-tabs" role="group" aria-label="View Mode">
         <button
           type="button"
-          className={`pricing-tab${viewMode === 'text' ? ' selected' : ''}`}
+          className={`view-mode-tab${viewMode === 'text' ? ' selected' : ''}`}
           onClick={() => onViewModeChange('text')}
           title="Raw Editor View"
         >
@@ -293,7 +297,7 @@ export function Toolbar({
 
         <button
           type="button"
-          className={`pricing-tab${viewMode === 'tree' ? ' selected' : ''}`}
+          className={`view-mode-tab${viewMode === 'tree' ? ' selected' : ''}`}
           onClick={() => onViewModeChange('tree')}
           disabled={!hasContent || !!error}
           title="Tree Inspector View"
@@ -304,7 +308,7 @@ export function Toolbar({
 
         <button
           type="button"
-          className={`pricing-tab${viewMode === 'graph' ? ' selected' : ''}`}
+          className={`view-mode-tab${viewMode === 'graph' ? ' selected' : ''}`}
           onClick={() => onViewModeChange('graph')}
           disabled={!hasContent || !!error}
           title="Graph Explorer View"
@@ -315,10 +319,10 @@ export function Toolbar({
 
         <button
           type="button"
-          className={`pricing-tab${viewMode === 'split' ? ' selected' : ''}`}
-          onClick={() => onViewModeChange('split')}
-          disabled={!hasContent || !!error}
-          title="Side-by-Side Split View"
+          className={`view-mode-tab${splitView ? ' selected' : ''}`}
+          onClick={() => onSplitViewChange(!splitView)}
+          disabled={viewMode === 'text' || !hasContent || !!error}
+          title={`Split with Raw Editor (currently ${viewMode === 'tree' ? 'Tree' : 'Graph'})`}
         >
           <Columns size={13} />
           <span>Split</span>

@@ -115,14 +115,26 @@
   left: 0;
   z-index: 120;
   width: 320px;
-  background: var(--surface-2);
+  background: var(--surface-1);
   border: 1px solid var(--hairline-strong);
   border-radius: var(--rounded-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   padding: 6px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  animation: dropdownFadeIn 140ms var(--ease-out);
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .sample-menu-header {
@@ -130,7 +142,7 @@
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--ink-subtle);
   text-transform: uppercase;
@@ -162,7 +174,7 @@
 }
 
 .sample-menu-item:hover {
-  background: var(--surface-3);
+  background: var(--surface-2);
 }
 
 .sample-item-top {
@@ -194,33 +206,33 @@
 }
 
 .category-api {
-  background: rgba(224, 108, 117, 0.15);
+  background: rgba(244, 63, 94, 0.12);
   color: var(--token-key);
-  border: 1px solid rgba(224, 108, 117, 0.25);
+  border: 1px solid rgba(244, 63, 94, 0.22);
 }
 
 .category-geojson {
-  background: rgba(152, 195, 121, 0.15);
+  background: rgba(16, 185, 129, 0.12);
   color: var(--token-string);
-  border: 1px solid rgba(152, 195, 121, 0.25);
+  border: 1px solid rgba(16, 185, 129, 0.22);
 }
 
 .category-edgecases {
-  background: rgba(239, 68, 68, 0.15);
+  background: rgba(244, 63, 94, 0.15);
   color: var(--danger);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(244, 63, 94, 0.25);
 }
 
 .category-ecommerce {
-  background: rgba(209, 154, 102, 0.15);
+  background: rgba(251, 146, 60, 0.12);
   color: var(--token-boolean);
-  border: 1px solid rgba(209, 154, 102, 0.25);
+  border: 1px solid rgba(251, 146, 60, 0.22);
 }
 
 .category-config {
-  background: rgba(198, 120, 221, 0.15);
+  background: rgba(192, 132, 252, 0.12);
   color: var(--token-null);
-  border: 1px solid rgba(198, 120, 221, 0.25);
+  border: 1px solid rgba(192, 132, 252, 0.22);
 }
 
 .toolbar-status-pill {
@@ -248,10 +260,10 @@
 .status-error {
   background: var(--danger-bg);
   color: var(--danger);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(244, 63, 94, 0.25);
 }
 
-.pricing-tab-group {
+.view-mode-tabs {
   display: inline-flex;
   background: var(--surface-2);
   border: 1px solid var(--hairline);
@@ -260,7 +272,7 @@
   gap: 2px;
 }
 
-.pricing-tab {
+.view-mode-tab {
   height: 24px;
   padding: 0 10px;
   border: 1px solid transparent;
@@ -273,22 +285,27 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  transition: color 120ms var(--ease-out), background-color 120ms var(--ease-out);
+  transition: color 120ms var(--ease-out), background-color 120ms var(--ease-out), border-color 120ms var(--ease-out), transform 100ms var(--ease-out);
 }
 
-.pricing-tab:hover:not(:disabled) {
+.view-mode-tab:hover:not(:disabled) {
   color: var(--ink);
 }
 
-.pricing-tab.selected {
-  background: var(--surface-3);
+.view-mode-tab.selected {
+  background: var(--surface-1);
   color: var(--ink);
   font-weight: 600;
   border-color: var(--hairline-strong);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
-.pricing-tab:disabled {
-  opacity: 0.35;
+.view-mode-tab:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.view-mode-tab:disabled {
+  opacity: 0.38;
   cursor: not-allowed;
 }
 

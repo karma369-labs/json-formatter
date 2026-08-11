@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, ChevronRight, Check, Copy, FileJson, Maximize2, Minimize2 } from 'lucide-react';
+import { AlertCircle, ChevronRight, Check, Copy, FileJson, Maximize2, Minimize2, Zap, ZapOff } from 'lucide-react';
 import type { ParseError } from '../lib/jsonParser';
+import { isHexColor } from '../lib/color';
 import './TreeNode.css';
 import './GraphView.css';
 
@@ -71,6 +72,22 @@ function collectNodes(
   }
 }
 
+function collectFirstLevelPaths(value: unknown, path: string): Set<string> {
+  const acc = new Set<string>();
+  const type = typeOf(value);
+  if (!isContainerType(type)) return acc;
+  const isArr = type === 'array';
+  const entries = isArr
+    ? (value as unknown[]).map((v, i) => [String(i), v] as const)
+    : Object.entries(value as Record<string, unknown>);
+  for (const [key, v] of entries) {
+    if (isContainerType(typeOf(v))) {
+      acc.add(isArr ? `${path}[${key}]` : `${path}.${key}`);
+    }
+  }
+  return acc;
+}
+
 function collectAllContainerPaths(value: unknown, path: string, acc: Set<string>) {
   const type = typeOf(value);
   if (!isContainerType(type)) return;
@@ -91,6 +108,7 @@ interface Edge {
   y1: number;
   x2: number;
   y2: number;
+  label?: string;
 }
 
 const CARD_HEADER_HEIGHT = 30;
@@ -99,6 +117,7 @@ function GraphValue({ type, value }: { type: JsonType; value: unknown }) {
   if (type === 'string') {
     return (
       <span className="tree-value tree-string" title={value as string}>
+        {isHexColor(value) ? <span className="color-swatch" style={{ background: value }} /> : null}
         "{value as string}"
       </span>
     );
@@ -198,13 +217,23 @@ function GraphCard({
 }
 
 function GraphCanvas({ parsed }: { parsed: unknown }) {
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  // "Live Transform": while on, the canvas tracks `parsed` directly. While off,
+  // the canvas keeps rendering the last-synced snapshot so edits to a large
+  // document don't force a full graph relayout on every keystroke.
+  const [live, setLive] = useState(true);
+  const [displayParsed, setDisplayParsed] = useState(parsed);
+  const stale = displayParsed !== parsed;
+  if (live && stale) {
+    setDisplayParsed(parsed);
+  }
 
-  // Reset expansion state whenever a structurally new document is loaded.
-  const [trackedParsed, setTrackedParsed] = useState(parsed);
-  if (trackedParsed !== parsed) {
-    setTrackedParsed(parsed);
-    if (expanded.size > 0) setExpanded(new Set());
+  const [expanded, setExpanded] = useState<Set<string>>(() => collectFirstLevelPaths(displayParsed, '$'));
+
+  // Reset expansion state whenever a structurally new document is displayed.
+  const [trackedParsed, setTrackedParsed] = useState(displayParsed);
+  if (trackedParsed !== displayParsed) {
+    setTrackedParsed(displayParsed);
+    setExpanded(collectFirstLevelPaths(displayParsed, '$'));
   }
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -215,9 +244,9 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
 
   const columns = useMemo(() => {
     const cols: CardNode[][] = [];
-    collectNodes(parsed, '$', 0, undefined, undefined, expanded, cols);
+    collectNodes(displayParsed, '$', 0, undefined, undefined, expanded, cols);
     return cols;
-  }, [parsed, expanded]);
+  }, [displayParsed, expanded]);
 
   const flatNodes = useMemo(() => columns.flat(), [columns]);
 
@@ -245,6 +274,7 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
           y1: rowRect.top + rowRect.height / 2 - containerRect.top + container.scrollTop,
           x2: cardRect.left - containerRect.left + container.scrollLeft,
           y2: cardRect.top + CARD_HEADER_HEIGHT / 2 - containerRect.top + container.scrollTop,
+          label: node.keyName,
         });
       }
 
@@ -268,12 +298,16 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
 
   function expandAll() {
     const all = new Set<string>();
-    collectAllContainerPaths(parsed, '$', all);
+    collectAllContainerPaths(displayParsed, '$', all);
     setExpanded(all);
   }
 
   function collapseAll() {
     setExpanded(new Set());
+  }
+
+  function toggleLive() {
+    setLive((v) => !v);
   }
 
   return (
@@ -287,6 +321,21 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
           <Minimize2 size={12} />
           <span>Collapse All</span>
         </button>
+
+        <button
+          type="button"
+          className={`button-tertiary graph-live-toggle${live ? ' active' : ''}`}
+          onClick={toggleLive}
+          title={
+            live
+              ? 'Live Transform on: the graph re-renders on every edit. Turn off to pause updates for large documents.'
+              : 'Live Transform paused: the graph is frozen. Click to resume and sync with the latest document.'
+          }
+        >
+          {live ? <Zap size={12} /> : <ZapOff size={12} />}
+          <span>Live Transform</span>
+          {!live && stale ? <span className="graph-live-stale-dot" /> : null}
+        </button>
       </div>
 
       <div className="graph-canvas" ref={scrollRef}>
@@ -298,14 +347,38 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
         >
           {edges.map((edge) => {
             const midX = (edge.x1 + edge.x2) / 2;
+            const midY = (edge.y1 + edge.y2) / 2;
+            const labelWidth = edge.label ? edge.label.length * 6.2 + 10 : 0;
             return (
-              <path
-                key={edge.id}
-                d={`M ${edge.x1} ${edge.y1} C ${midX} ${edge.y1}, ${midX} ${edge.y2}, ${edge.x2} ${edge.y2}`}
-                stroke="var(--hairline-strong)"
-                strokeWidth={1.5}
-                fill="none"
-              />
+              <g key={edge.id}>
+                <path
+                  d={`M ${edge.x1} ${edge.y1} C ${midX} ${edge.y1}, ${midX} ${edge.y2}, ${edge.x2} ${edge.y2}`}
+                  stroke="var(--hairline-strong)"
+                  strokeWidth={1.5}
+                  fill="none"
+                />
+                {edge.label ? (
+                  <>
+                    <rect
+                      className="graph-edge-label-bg"
+                      x={midX - labelWidth / 2}
+                      y={midY - 8}
+                      width={labelWidth}
+                      height={16}
+                      rx={3}
+                    />
+                    <text
+                      className="graph-edge-label-text"
+                      x={midX}
+                      y={midY}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                    >
+                      {edge.label}
+                    </text>
+                  </>
+                ) : null}
+              </g>
             );
           })}
         </svg>

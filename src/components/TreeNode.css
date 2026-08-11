@@ -18,7 +18,8 @@
   bottom: 0;
   left: 12px;
   width: 1px;
-  background: var(--hairline-subtle);
+  background: var(--hairline-strong);
+  opacity: 0.6;
   pointer-events: none;
 }
 
@@ -129,12 +130,22 @@
   font-weight: 600;
 }
 
-.tree-highlight {
-  background: rgba(251, 191, 36, 0.3);
-  color: #ffffff;
-  padding: 0 2px;
+.color-swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 4px;
   border-radius: 2px;
-  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.4);
+  border: 1px solid var(--hairline-strong);
+  flex-shrink: 0;
+}
+
+.tree-highlight {
+  background: rgba(99, 102, 241, 0.25);
+  color: var(--ink);
+  padding: 0 3px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4);
 }
 
 .tree-url-link {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Copy, Check, Download, FileCode, FileSpreadsheet, FileText, Braces, Quote } from 'lucide-react';
+import { X, Copy, Check, Download, FileCode, FileSpreadsheet, FileText, Braces, Quote, FileJson2, FileType } from 'lucide-react';
 import { convertJson, type ConverterFormat } from '../lib/converters';
 import './ConvertModal.css';
 
@@ -14,6 +14,8 @@ const FORMATS: { value: ConverterFormat; label: string; icon: typeof FileCode }[
   { value: 'csv', label: 'CSV', icon: FileSpreadsheet },
   { value: 'tsv', label: 'TSV', icon: FileSpreadsheet },
   { value: 'yaml', label: 'YAML', icon: Braces },
+  { value: 'schema', label: 'JSON Schema', icon: FileJson2 },
+  { value: 'typescript', label: 'TypeScript', icon: FileType },
   { value: 'escape', label: 'Escape', icon: Quote },
   { value: 'unescape', label: 'Unescape', icon: FileText },
 ];

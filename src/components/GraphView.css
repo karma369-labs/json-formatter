@@ -16,14 +16,31 @@
   flex-shrink: 0;
 }
 
+.graph-live-toggle {
+  margin-left: auto;
+  position: relative;
+}
+
+.graph-live-toggle.active {
+  color: var(--primary);
+}
+
+.graph-live-stale-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+  margin-left: 2px;
+}
+
 .graph-canvas {
   flex: 1;
   min-height: 0;
   overflow: auto;
   position: relative;
   padding: 28px;
-  background-image: radial-gradient(var(--hairline) 1px, transparent 1px);
-  background-size: 18px 18px;
+  background-image: radial-gradient(var(--hairline-strong) 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 
 .graph-edges {
@@ -32,6 +49,18 @@
   left: 0;
   pointer-events: none;
   overflow: visible;
+}
+
+.graph-edge-label-bg {
+  fill: var(--surface-1);
+  stroke: var(--hairline);
+  stroke-width: 1;
+}
+
+.graph-edge-label-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: var(--ink-subtle);
 }
 
 .graph-columns {
@@ -54,10 +83,16 @@
   width: 260px;
   flex-shrink: 0;
   background: var(--surface-2);
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--hairline-strong);
   border-radius: var(--rounded-md);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  transition: border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
+}
+
+.graph-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
 }
 
 .graph-card-header {
@@ -65,7 +100,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 8px;
+  padding: 0 10px;
   background: var(--surface-3);
   border-bottom: 1px solid var(--hairline);
   font-size: 11.5px;
@@ -142,7 +177,8 @@
 }
 
 .graph-row-toggle.active {
-  background: var(--overlay-weak);
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--ink);
 }
 
 .graph-row-connector {
@@ -150,7 +186,7 @@
   display: inline-flex;
   color: var(--ink-tertiary);
   flex-shrink: 0;
-  transition: color 100ms var(--ease-out);
+  transition: color 100ms var(--ease-out), transform 100ms var(--ease-out);
 }
 
 .graph-row-toggle:hover .graph-row-connector,

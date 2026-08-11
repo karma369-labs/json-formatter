@@ -13,7 +13,7 @@ import {
 } from '../lib/jsonParser';
 import { loadCurrentDoc, saveCurrentDoc } from '../lib/storage';
 
-export type ViewMode = 'text' | 'tree' | 'graph' | 'split';
+export type ViewMode = 'text' | 'tree' | 'graph';
 
 export interface JsonEditorState {
   raw: string;
@@ -21,6 +21,7 @@ export interface JsonEditorState {
   error: ParseError | null;
   indent: IndentOption;
   viewMode: ViewMode;
+  splitView: boolean;
 }
 
 type Action =
@@ -31,6 +32,7 @@ type Action =
   | { type: 'repair' }
   | { type: 'setIndent'; indent: IndentOption }
   | { type: 'setViewMode'; mode: ViewMode }
+  | { type: 'setSplitView'; split: boolean }
   | { type: 'loadContent'; raw: string };
 
 function reparse(raw: string): { parsed: unknown; error: ParseError | null } {
@@ -71,6 +73,9 @@ function reducer(state: JsonEditorState, action: Action): JsonEditorState {
     case 'setViewMode':
       return { ...state, viewMode: action.mode };
 
+    case 'setSplitView':
+      return { ...state, splitView: action.split };
+
     case 'loadContent':
       return { ...state, raw: action.raw, ...reparse(action.raw) };
 
@@ -81,7 +86,7 @@ function reducer(state: JsonEditorState, action: Action): JsonEditorState {
 
 function initState(): JsonEditorState {
   const raw = loadCurrentDoc() ?? '';
-  return { raw, indent: 2, viewMode: 'split', ...reparse(raw) };
+  return { raw, indent: 2, viewMode: 'tree', splitView: true, ...reparse(raw) };
 }
 
 export function useJsonEditor() {
@@ -103,6 +108,7 @@ export function useJsonEditor() {
     repair: () => dispatch({ type: 'repair' }),
     setIndent: (indent: IndentOption) => dispatch({ type: 'setIndent', indent }),
     setViewMode: (mode: ViewMode) => dispatch({ type: 'setViewMode', mode }),
+    setSplitView: (split: boolean) => dispatch({ type: 'setSplitView', split }),
     loadContent: (raw: string) => dispatch({ type: 'loadContent', raw }),
   };
 }

@@ -76,6 +76,7 @@ function App() {
   const [showPalette, setShowPalette] = useState(false);
 
   const lineCount = state.raw ? state.raw.split('\n').length : 0;
+  const isSplit = state.splitView && state.viewMode !== 'text';
   const byteSize = new Blob([state.raw]).size;
 
   const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
@@ -149,7 +150,13 @@ function App() {
     { id: 'view-raw', label: 'View: Raw Editor', icon: Code2, action: () => editor.setViewMode('text') },
     { id: 'view-tree', label: 'View: Tree Explorer', icon: Network, action: () => editor.setViewMode('tree'), disabled: !hasContent || !!state.error },
     { id: 'view-graph', label: 'View: Graph Explorer', icon: Workflow, action: () => editor.setViewMode('graph'), disabled: !hasContent || !!state.error },
-    { id: 'view-split', label: 'View: Split', icon: Columns, action: () => editor.setViewMode('split'), disabled: !hasContent || !!state.error },
+    {
+      id: 'view-split-toggle',
+      label: state.splitView ? 'View: Disable Split' : 'View: Split with Raw Editor',
+      icon: Columns,
+      action: () => editor.setSplitView(!state.splitView),
+      disabled: state.viewMode === 'text' || !hasContent || !!state.error,
+    },
     {
       id: 'theme',
       label: theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme',
@@ -182,9 +189,6 @@ function App() {
             >
               {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
             </button>
-            <span className="brand-icon">
-              <Code2 size={18} />
-            </span>
             <span>JSON Studio</span>
           </div>
 
@@ -213,7 +217,7 @@ function App() {
             <button
               type="button"
               className="button-tertiary button-icon-only"
-              onClick={toggleTheme}
+              onClick={(e) => toggleTheme(e)}
               title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
             >
               {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
@@ -274,12 +278,14 @@ function App() {
               error={state.error}
               hasContent={!!state.raw.trim()}
               viewMode={state.viewMode}
+              splitView={state.splitView}
               onIndentChange={editor.setIndent}
               onFormat={editor.format}
               onMinify={editor.minify}
               onSortKeys={editor.sortKeys}
               onRepair={editor.repair}
               onViewModeChange={editor.setViewMode}
+              onSplitViewChange={editor.setSplitView}
               onFileUpload={editor.loadContent}
               onLoadSample={handleLoadSample}
               onOpenConvert={() => setShowConvert(true)}
@@ -288,8 +294,8 @@ function App() {
 
             <ErrorBanner error={state.error} />
 
-            <div className={`app-panes ${state.viewMode}`}>
-              {state.viewMode === 'text' || state.viewMode === 'split' ? (
+            <div className={`app-panes ${isSplit ? 'split' : state.viewMode}`}>
+              {state.viewMode === 'text' || isSplit ? (
                 <div className="product-panel">
                   <div className="panel-header">
                     <span>Source Text</span>
@@ -303,7 +309,7 @@ function App() {
                 </div>
               ) : null}
 
-              {state.viewMode === 'tree' || state.viewMode === 'split' ? (
+              {state.viewMode === 'tree' ? (
                 <div className="product-panel">
                   <div className="panel-header">
                     <span>Tree Explorer</span>

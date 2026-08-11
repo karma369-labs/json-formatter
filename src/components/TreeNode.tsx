@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ChevronRight, Copy, ExternalLink, Check } from 'lucide-react';
+import { isHexColor } from '../lib/color';
 import './TreeNode.css';
 
 interface TreeNodeProps {
@@ -132,6 +133,7 @@ export function TreeNode({ keyName, value, depth, parentPath = '$', parentIsArra
           <span className={`tree-value tree-${type}`}>
             {type === 'string' ? (
               <>
+                {isHexColor(value) ? <span className="color-swatch" style={{ background: value as string }} /> : null}
                 "<HighlightText text={value as string} filter={filter} />"
               </>
             ) : (

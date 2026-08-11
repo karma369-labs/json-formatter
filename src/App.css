@@ -1,93 +1,93 @@
 :root,
 :root[data-theme='dark'] {
-  --canvas: #0f1013;
-  --surface-1: #16181d;
-  --surface-2: #1e222b;
-  --surface-3: #282c37;
-  --surface-4: #323846;
+  --canvas: #0b0c0e;
+  --surface-1: #121418;
+  --surface-2: #191c22;
+  --surface-3: #222630;
+  --surface-4: #2b303c;
 
   --hairline: rgba(255, 255, 255, 0.08);
   --hairline-strong: rgba(255, 255, 255, 0.16);
   --hairline-subtle: rgba(255, 255, 255, 0.04);
 
-  --primary: #4c78dd;
-  --primary-hover: #5d88ec;
-  --primary-active: #3b65c4;
+  --primary: #6366f1;
+  --primary-hover: #818cf8;
+  --primary-active: #4f46e5;
   --on-primary: #ffffff;
 
-  --ink: #e0e6ed;
-  --ink-muted: #9da6b4;
-  --ink-subtle: #636e82;
-  --ink-tertiary: #4b5363;
+  --ink: #f1f5f9;
+  --ink-muted: #94a3b8;
+  --ink-subtle: #64748b;
+  --ink-tertiary: #475569;
 
   --semantic-success: #10b981;
-  --semantic-success-bg: rgba(16, 185, 129, 0.1);
-  --danger: #ef4444;
-  --danger-bg: rgba(239, 68, 68, 0.1);
-  --danger-hover: #f87171;
+  --semantic-success-bg: rgba(16, 185, 129, 0.12);
+  --danger: #f43f5e;
+  --danger-bg: rgba(244, 63, 94, 0.12);
+  --danger-hover: #fb7185;
 
-  --token-key: #e06c75;
-  --token-string: #98c379;
-  --token-number: #61afef;
-  --token-boolean: #d19a66;
-  --token-null: #c678dd;
-  --token-bracket: #7f8c9d;
+  --token-key: #f43f5e;
+  --token-string: #10b981;
+  --token-number: #38bdf8;
+  --token-boolean: #fb923c;
+  --token-null: #c084fc;
+  --token-bracket: #94a3b8;
 
   --overlay-weak: rgba(255, 255, 255, 0.05);
-  --overlay-medium: rgba(255, 255, 255, 0.025);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+  --overlay-medium: rgba(255, 255, 255, 0.08);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
 }
 
 :root[data-theme='light'] {
-  --canvas: #f6f7f9;
+  --canvas: #f8fafc;
   --surface-1: #ffffff;
-  --surface-2: #f1f3f6;
-  --surface-3: #e6e9ef;
-  --surface-4: #d9dde5;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
+  --surface-4: #cbd5e1;
 
-  --hairline: rgba(15, 23, 42, 0.09);
-  --hairline-strong: rgba(15, 23, 42, 0.18);
+  --hairline: rgba(15, 23, 42, 0.08);
+  --hairline-strong: rgba(15, 23, 42, 0.16);
   --hairline-subtle: rgba(15, 23, 42, 0.04);
 
-  --primary: #3b65c4;
-  --primary-hover: #2f52a0;
-  --primary-active: #24407f;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-active: #3730a3;
   --on-primary: #ffffff;
 
-  --ink: #1a1d24;
-  --ink-muted: #565f6f;
-  --ink-subtle: #7a8494;
-  --ink-tertiary: #9aa3b2;
+  --ink: #0f172a;
+  --ink-muted: #475569;
+  --ink-subtle: #64748b;
+  --ink-tertiary: #94a3b8;
 
   --semantic-success: #059669;
   --semantic-success-bg: rgba(5, 150, 105, 0.1);
-  --danger: #dc2626;
-  --danger-bg: rgba(220, 38, 38, 0.08);
-  --danger-hover: #b91c1c;
+  --danger: #e11d48;
+  --danger-bg: rgba(225, 29, 72, 0.08);
+  --danger-hover: #be123c;
 
-  --token-key: #c2185b;
-  --token-string: #2e7d32;
-  --token-number: #1565c0;
-  --token-boolean: #b26a00;
-  --token-null: #8e24aa;
-  --token-bracket: #5c6470;
+  --token-key: #be185d;
+  --token-string: #047857;
+  --token-number: #0284c7;
+  --token-boolean: #d97706;
+  --token-null: #7e22ce;
+  --token-bracket: #64748b;
 
-  --overlay-weak: rgba(15, 23, 42, 0.05);
-  --overlay-medium: rgba(15, 23, 42, 0.035);
-  --scrollbar-thumb: rgba(15, 23, 42, 0.15);
+  --overlay-weak: rgba(15, 23, 42, 0.04);
+  --overlay-medium: rgba(15, 23, 42, 0.07);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.16);
   --scrollbar-thumb-hover: rgba(15, 23, 42, 0.28);
 }
 
 :root {
-  --font-display: 'Inter', -apple-system, system-ui, sans-serif;
-  --font-text: 'Inter', -apple-system, system-ui, sans-serif;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-text: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
 
-  --rounded-xs: 3px;
-  --rounded-sm: 4px;
-  --rounded-md: 6px;
-  --rounded-lg: 8px;
+  --rounded-xs: 4px;
+  --rounded-sm: 6px;
+  --rounded-md: 8px;
+  --rounded-lg: 12px;
   --rounded-pill: 9999px;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -120,7 +120,7 @@ button, input, select {
 
 :focus-visible {
   outline: none;
-  box-shadow: 0 0 0 1px var(--canvas), 0 0 0 3px var(--primary);
+  box-shadow: 0 0 0 1px var(--canvas), 0 0 0 2px var(--primary);
 }
 
 ::-webkit-scrollbar {
@@ -153,19 +153,21 @@ button, input, select {
   font-size: 11.5px;
   font-weight: 500;
   border-radius: var(--rounded-sm);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   cursor: pointer;
-  transition: background-color 120ms var(--ease-out), transform 100ms var(--ease-out);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: background-color 120ms var(--ease-out), transform 100ms var(--ease-out), box-shadow 120ms var(--ease-out);
   user-select: none;
   white-space: nowrap;
 }
 
 .button-primary:hover:not(:disabled) {
   background: var(--primary-hover);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .button-primary:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.97);
   background: var(--primary-active);
 }
 
@@ -195,7 +197,7 @@ button, input, select {
 }
 
 .button-secondary:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .button-tertiary {
@@ -222,13 +224,13 @@ button, input, select {
 }
 
 .button-tertiary:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .button-primary:disabled,
 .button-secondary:disabled,
 .button-tertiary:disabled {
-  opacity: 0.35;
+  opacity: 0.38;
   cursor: not-allowed;
   transform: none !important;
 }
@@ -266,9 +268,9 @@ button, input, select {
   align-items: center;
   gap: 8px;
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   color: var(--ink);
 }
 
@@ -280,8 +282,8 @@ button, input, select {
   width: 24px;
   height: 24px;
   border-radius: var(--rounded-sm);
-  background: rgba(76, 120, 221, 0.12);
-  border: 1px solid rgba(76, 120, 221, 0.25);
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
 }
 
 .top-nav-meta {
@@ -325,8 +327,8 @@ button, input, select {
   display: grid;
   grid-template-columns: 1fr;
   min-height: 0;
-  padding: 12px;
-  gap: 12px;
+  padding: 10px;
+  gap: 10px;
 }
 
 .app-panes.split {
@@ -337,6 +339,7 @@ button, input, select {
   background: var(--surface-1);
   border: 1px solid var(--hairline);
   border-radius: var(--rounded-md);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -357,12 +360,27 @@ button, input, select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--ink-subtle);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   user-select: none;
+}
+
+/* Circular View Transition for Theme Switcher */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -403,12 +421,13 @@ button, input, select {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
     z-index: 85;
   }
 
   .app-panes {
-    padding: 8px;
-    gap: 8px;
+    padding: 6px;
+    gap: 6px;
   }
 
   .app-panes.split {

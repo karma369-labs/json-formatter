@@ -71,8 +71,7 @@ export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollaps
           />
           <button
             type="button"
-            className="button-primary"
-            style={{ height: '28px', padding: '0 10px', fontSize: '11px' }}
+            className="button-secondary"
             onClick={handleSave}
             disabled={!raw.trim()}
           >
