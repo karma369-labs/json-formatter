@@ -26,6 +26,7 @@ export interface JsonEditorState {
 
 type Action =
   | { type: 'setRaw'; raw: string }
+  | { type: 'commitParse'; raw: string }
   | { type: 'format' }
   | { type: 'minify' }
   | { type: 'sortKeys' }
@@ -45,8 +46,15 @@ function reparse(raw: string): { parsed: unknown; error: ParseError | null } {
 
 function reducer(state: JsonEditorState, action: Action): JsonEditorState {
   switch (action.type) {
+    // Raw text updates immediately (so typing never stalls); parsing is
+    // debounced separately via 'commitParse' so a full JSON.parse doesn't
+    // run synchronously on every keystroke of a large document.
     case 'setRaw':
-      return { ...state, raw: action.raw, ...reparse(action.raw) };
+      return { ...state, raw: action.raw };
+
+    case 'commitParse':
+      if (action.raw !== state.raw) return state;
+      return { ...state, ...reparse(action.raw) };
 
     case 'format':
       if (state.error || state.parsed === undefined) return state;
@@ -97,6 +105,13 @@ export function useJsonEditor() {
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => saveCurrentDoc(state.raw), 500);
     return () => clearTimeout(saveTimer.current);
+  }, [state.raw]);
+
+  const parseTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    clearTimeout(parseTimer.current);
+    parseTimer.current = setTimeout(() => dispatch({ type: 'commitParse', raw: state.raw }), 150);
+    return () => clearTimeout(parseTimer.current);
   }, [state.raw]);
 
   return {

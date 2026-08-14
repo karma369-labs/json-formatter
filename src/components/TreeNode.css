@@ -1,34 +1,11 @@
-.tree-branch {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  position: relative;
-}
-
-.tree-children {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.tree-children::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 12px;
-  width: 1px;
-  background: var(--hairline-strong);
-  opacity: 0.6;
-  pointer-events: none;
-}
-
 .tree-row {
   display: flex;
   align-items: center;
   width: 100%;
   min-width: 0;
-  padding: 3px 6px;
+  height: 26px;
+  box-sizing: border-box;
+  padding: 0 6px;
   background: transparent;
   border: none;
   border-radius: var(--rounded-xs);

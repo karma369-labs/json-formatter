@@ -1,8 +1,12 @@
-import { useState, useMemo, type ChangeEvent } from 'react';
+import { useMemo, useState, type ChangeEvent } from 'react';
 import { FileJson, AlertCircle, Search, X } from 'lucide-react';
 import type { ParseError } from '../lib/jsonParser';
-import { TreeNode } from './TreeNode';
+import { flattenTree } from '../lib/flattenTree';
+import { useVirtualList } from '../hooks/useVirtualList';
+import { TreeRow } from './TreeRow';
 import './TreeView.css';
+
+const ROW_HEIGHT = 26;
 
 interface TreeViewProps {
   parsed: unknown;
@@ -49,11 +53,33 @@ function countMatches(val: unknown, filter: string): number {
 
 export function TreeView({ parsed, error }: TreeViewProps) {
   const [filter, setFilter] = useState('');
+  const [toggled, setToggled] = useState<Set<string>>(() => new Set());
+
+  const trimmedFilter = filter.trim();
 
   const matchCount = useMemo(() => {
-    if (!filter.trim() || parsed === undefined || error) return 0;
-    return countMatches(parsed, filter.trim());
-  }, [parsed, filter, error]);
+    if (!trimmedFilter || parsed === undefined || error) return 0;
+    return countMatches(parsed, trimmedFilter);
+  }, [parsed, trimmedFilter, error]);
+
+  const rows = useMemo(
+    () => (parsed === undefined || error ? [] : flattenTree(parsed, trimmedFilter, toggled)),
+    [parsed, trimmedFilter, toggled, error]
+  );
+
+  const { containerRef, onScroll, startIndex, endIndex, totalHeight, offsetY } = useVirtualList({
+    count: rows.length,
+    rowHeight: ROW_HEIGHT,
+  });
+
+  function handleToggle(path: string) {
+    setToggled((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  }
 
   if (error) {
     return (
@@ -106,14 +132,21 @@ export function TreeView({ parsed, error }: TreeViewProps) {
             style={{ width: '20px', height: '20px' }}
             onClick={() => setFilter('')}
             title="Clear filter"
+            aria-label="Clear filter"
           >
             <X size={12} />
           </button>
         ) : null}
       </div>
 
-      <div className="tree-view">
-        <TreeNode value={parsed} depth={0} parentPath="$" filter={filter.trim()} />
+      <div className="tree-view" ref={containerRef} onScroll={onScroll}>
+        <div style={{ height: totalHeight, position: 'relative' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, transform: `translateY(${offsetY}px)` }}>
+            {rows.slice(startIndex, endIndex).map((row) => (
+              <TreeRow key={row.path} row={row} filter={trimmedFilter} onToggle={handleToggle} />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

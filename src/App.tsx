@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import {
   Code2,
   Copy,
@@ -24,16 +24,18 @@ import {
 import { ErrorBanner } from './components/ErrorBanner';
 import { FileDropZone } from './components/FileDropZone';
 import { JsonEditor } from './components/JsonEditor';
-import { GraphView } from './components/GraphView';
 import { SnapshotsPanel } from './components/SnapshotsPanel';
 import { Toolbar } from './components/Toolbar';
 import { TreeView } from './components/TreeView';
-import { ConvertModal } from './components/ConvertModal';
-import { CompareModal } from './components/CompareModal';
-import { CommandPalette, type Command } from './components/CommandPalette';
+import type { Command } from './components/CommandPalette';
 import { useJsonEditor } from './hooks/useJsonEditor';
 import { useTheme } from './hooks/useTheme';
 import './App.css';
+
+const GraphView = lazy(() => import('./components/GraphView').then((m) => ({ default: m.GraphView })));
+const ConvertModal = lazy(() => import('./components/ConvertModal').then((m) => ({ default: m.ConvertModal })));
+const CompareModal = lazy(() => import('./components/CompareModal').then((m) => ({ default: m.CompareModal })));
+const CommandPalette = lazy(() => import('./components/CommandPalette').then((m) => ({ default: m.CommandPalette })));
 
 const SAMPLE_JSON = JSON.stringify(
   {
@@ -186,6 +188,7 @@ function App() {
               className="button-tertiary button-icon-only"
               onClick={() => setSidebarCollapsed((c) => !c)}
               title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+              aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
             >
               {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
             </button>
@@ -219,6 +222,7 @@ function App() {
               className="button-tertiary button-icon-only"
               onClick={(e) => toggleTheme(e)}
               title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
             >
               {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             </button>
@@ -333,27 +337,43 @@ function App() {
                       </span>
                     ) : null}
                   </div>
-                  <GraphView parsed={state.parsed} error={state.error} />
+                  <Suspense
+                    fallback={
+                      <div className="suspense-fallback">
+                        <div className="suspense-spinner" />
+                      </div>
+                    }
+                  >
+                    <GraphView parsed={state.parsed} error={state.error} />
+                  </Suspense>
                 </div>
               ) : null}
             </div>
           </main>
         </div>
 
-        {showConvert ? (
-          <ConvertModal raw={state.raw} parsed={state.parsed} onClose={() => setShowConvert(false)} />
-        ) : null}
+        <Suspense
+          fallback={
+            <div className="overlay-loading-backdrop">
+              <div className="suspense-spinner" />
+            </div>
+          }
+        >
+          {showConvert ? (
+            <ConvertModal raw={state.raw} parsed={state.parsed} onClose={() => setShowConvert(false)} />
+          ) : null}
 
-        {showCompare ? (
-          <CompareModal
-            raw={state.raw}
-            parsed={state.parsed}
-            error={state.error}
-            onClose={() => setShowCompare(false)}
-          />
-        ) : null}
+          {showCompare ? (
+            <CompareModal
+              raw={state.raw}
+              parsed={state.parsed}
+              error={state.error}
+              onClose={() => setShowCompare(false)}
+            />
+          ) : null}
 
-        {showPalette ? <CommandPalette commands={commands} onClose={() => setShowPalette(false)} /> : null}
+          {showPalette ? <CommandPalette commands={commands} onClose={() => setShowPalette(false)} /> : null}
+        </Suspense>
       </div>
     </FileDropZone>
   );

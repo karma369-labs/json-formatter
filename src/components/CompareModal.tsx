@@ -3,6 +3,7 @@ import { X, Upload, Plus, Minus, Pencil, GitCompare } from 'lucide-react';
 import { parseJson, type ParseError } from '../lib/jsonParser';
 import { diffJson, summarizeDiff, previewValue, type DiffOp } from '../lib/diff';
 import { readTextFile } from '../lib/file';
+import { useModalFocus } from '../hooks/useModalFocus';
 import './CompareModal.css';
 
 interface CompareModalProps {
@@ -21,6 +22,7 @@ const TYPE_META: Record<DiffOp['type'], { label: string; icon: typeof Plus; clas
 export function CompareModal({ raw, parsed, error, onClose }: CompareModalProps) {
   const [bRaw, setBRaw] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useModalFocus<HTMLDivElement>();
 
   const bResult = parseJson(bRaw);
   const bError = bRaw.trim() === '' ? null : bResult.success ? null : (bResult.error ?? null);
@@ -41,10 +43,23 @@ export function CompareModal({ raw, parsed, error, onClose }: CompareModalProps)
 
   return (
     <div className="compare-modal-backdrop" onMouseDown={onClose}>
-      <div className="compare-modal" onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        className="compare-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Compare JSON"
+        ref={containerRef}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="compare-modal-header">
           <span>Compare JSON</span>
-          <button type="button" className="button-tertiary button-icon-only" onClick={onClose} title="Close">
+          <button
+            type="button"
+            className="button-tertiary button-icon-only"
+            onClick={onClose}
+            title="Close"
+            aria-label="Close"
+          >
             <X size={15} />
           </button>
         </div>
@@ -78,6 +93,7 @@ export function CompareModal({ raw, parsed, error, onClose }: CompareModalProps)
                 className="button-tertiary button-icon-only"
                 onClick={() => fileInputRef.current?.click()}
                 title="Upload a JSON file to compare against"
+                aria-label="Upload a JSON file to compare against"
               >
                 <Upload size={13} />
               </button>

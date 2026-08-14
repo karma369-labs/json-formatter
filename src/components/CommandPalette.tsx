@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Search, CornerDownLeft } from 'lucide-react';
+import { useModalFocus } from '../hooks/useModalFocus';
 import './CommandPalette.css';
 
 export interface Command {
@@ -20,6 +21,7 @@ export function CommandPalette({ commands, onClose }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
+  const containerRef = useModalFocus<HTMLDivElement>();
 
   const q = query.trim().toLowerCase();
   const filtered = q ? commands.filter((c) => c.label.toLowerCase().includes(q)) : commands;
@@ -52,12 +54,18 @@ export function CommandPalette({ commands, onClose }: CommandPaletteProps) {
 
   return (
     <div className="palette-backdrop" onMouseDown={onClose}>
-      <div className="command-palette" onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        className="command-palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+        ref={containerRef}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="palette-input-row">
           <Search size={14} className="palette-search-icon" />
           <input
             type="text"
-            autoFocus
             className="palette-input"
             placeholder="Type a command…"
             value={query}

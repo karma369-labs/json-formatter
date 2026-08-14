@@ -140,7 +140,7 @@ function GraphCard({
   isExpanded: (path: string) => boolean;
   onToggleRow: (path: string) => void;
   registerCardRef: (path: string, el: HTMLDivElement | null) => void;
-  registerRowRef: (id: string, el: HTMLDivElement | null) => void;
+  registerRowRef: (id: string, el: HTMLElement | null) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const openBracket = node.type === 'array' ? '[' : '{';
@@ -166,6 +166,7 @@ function GraphCard({
           className="button-tertiary button-icon-only graph-card-copy"
           onClick={handleCopy}
           title={`Copy JSONPath: ${node.path}`}
+          aria-label={`Copy JSONPath: ${node.path}`}
         >
           {copied ? <Check size={11} style={{ color: 'var(--semantic-success)' }} /> : <Copy size={11} />}
         </button>
@@ -238,7 +239,7 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef(new Map<string, HTMLDivElement>());
-  const rowRefs = useRef(new Map<string, HTMLDivElement>());
+  const rowRefs = useRef(new Map<string, HTMLElement>());
   const [edges, setEdges] = useState<Edge[]>([]);
   const [svgSize, setSvgSize] = useState({ width: 0, height: 0 });
 

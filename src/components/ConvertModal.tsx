@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Copy, Check, Download, FileCode, FileSpreadsheet, FileText, Braces, Quote, FileJson2, FileType } from 'lucide-react';
 import { convertJson, type ConverterFormat } from '../lib/converters';
+import { useModalFocus } from '../hooks/useModalFocus';
 import './ConvertModal.css';
 
 interface ConvertModalProps {
@@ -23,6 +24,7 @@ const FORMATS: { value: ConverterFormat; label: string; icon: typeof FileCode }[
 export function ConvertModal({ raw, parsed, onClose }: ConvertModalProps) {
   const [format, setFormat] = useState<ConverterFormat>('xml');
   const [copied, setCopied] = useState(false);
+  const containerRef = useModalFocus<HTMLDivElement>();
 
   let output = '';
   let convertError: string | null = null;
@@ -57,10 +59,23 @@ export function ConvertModal({ raw, parsed, onClose }: ConvertModalProps) {
 
   return (
     <div className="convert-modal-backdrop" onMouseDown={onClose}>
-      <div className="convert-modal" onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        className="convert-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Convert JSON"
+        ref={containerRef}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="convert-modal-header">
           <span>Convert JSON</span>
-          <button type="button" className="button-tertiary button-icon-only" onClick={onClose} title="Close">
+          <button
+            type="button"
+            className="button-tertiary button-icon-only"
+            onClick={onClose}
+            title="Close"
+            aria-label="Close"
+          >
             <X size={15} />
           </button>
         </div>

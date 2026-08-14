@@ -51,6 +51,7 @@ export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollaps
             className="button-tertiary button-icon-only"
             onClick={onToggleCollapse}
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
@@ -112,6 +113,7 @@ export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollaps
                       className="button-tertiary button-icon-only snapshot-action-btn"
                       onClick={(e) => handleCopy(s.content, s.id, e)}
                       title="Copy snapshot content"
+                      aria-label="Copy snapshot content"
                     >
                       {copiedId === s.id ? <Check size={12} style={{ color: 'var(--semantic-success)' }} /> : <Copy size={12} />}
                     </button>
@@ -120,6 +122,7 @@ export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollaps
                       className="button-tertiary button-icon-only snapshot-action-btn delete-btn"
                       onClick={(e) => handleDelete(s.id, e)}
                       title="Delete snapshot"
+                      aria-label="Delete snapshot"
                     >
                       <Trash2 size={12} />
                     </button>
