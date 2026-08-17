@@ -27,6 +27,7 @@ DESIGN.md
 skills-lock.json
 PRD.md
 docs/
+dist*.zip
 
 # AI tooling / agent config
 CLAUDE.md

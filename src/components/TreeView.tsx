@@ -4,6 +4,7 @@ import type { ParseError } from '../lib/jsonParser';
 import { flattenTree } from '../lib/flattenTree';
 import { useVirtualList } from '../hooks/useVirtualList';
 import { TreeRow } from './TreeRow';
+import { trackThrottled } from '../lib/analytics';
 import './TreeView.css';
 
 const ROW_HEIGHT = 26;
@@ -118,7 +119,14 @@ export function TreeView({ parsed, error }: TreeViewProps) {
           className="tree-search-input"
           placeholder="Filter keys or values..."
           value={filter}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => setFilter(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+            const next = e.target.value;
+            // Query length bucket only — never the query text itself.
+            if (next.trim()) {
+              trackThrottled('tree_search', { query_length: next.trim().length }, 5000);
+            }
+            setFilter(next);
+          }}
         />
         {filter.trim() ? (
           <span className={`tree-match-badge${matchCount === 0 ? ' no-match' : ''}`}>

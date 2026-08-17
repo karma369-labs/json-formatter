@@ -34,23 +34,29 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       });
     });
 
-    transition.ready.then(() => {
-      const clipPath = [
-        `circle(0px at ${x}px ${y}px)`,
-        `circle(${endRadius}px at ${x}px ${y}px)`
-      ];
+    transition.ready
+      .then(() => {
+        const clipPath = [
+          `circle(0px at ${x}px ${y}px)`,
+          `circle(${endRadius}px at ${x}px ${y}px)`
+        ];
 
-      document.documentElement.animate(
-        {
-          clipPath,
-        },
-        {
-          duration: 450,
-          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-          pseudoElement: '::view-transition-new(root)',
-        }
-      );
-    });
+        document.documentElement.animate(
+          {
+            clipPath,
+          },
+          {
+            duration: 450,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            pseudoElement: '::view-transition-new(root)',
+          }
+        );
+      })
+      // `ready` rejects when the transition is skipped or aborted (rapid
+      // toggles, backgrounded tab). The theme has already been applied by
+      // then — only the reveal animation is lost, so swallow it rather than
+      // letting it surface as an unhandled rejection.
+      .catch(() => {});
   }
 
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;

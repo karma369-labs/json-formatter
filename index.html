@@ -7,6 +7,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#863bff" />
 
+    <!-- Consent Mode v2 default — must run synchronously BEFORE gtag.js loads, so a
+         returning visitor who already accepted isn't re-blocked on every reload.
+         Fails closed: if localStorage is unreadable, consent stays denied. -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      var storedConsent = null;
+      try { storedConsent = localStorage.getItem('jsonfmt:cookie-consent'); } catch (e) {}
+      gtag('consent', 'default', {
+        analytics_storage: storedConsent === 'granted' ? 'granted' : 'denied'
+      });
+    </script>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-SJZJ1LY3FK"></script>
+    <script>
+      gtag('js', new Date());
+      gtag('config', 'G-SJZJ1LY3FK');
+    </script>
+
     <title>JSON Studio — Free Online JSON Formatter, Validator &amp; Viewer</title>
     <meta name="description" content="Free online JSON formatter, validator, and viewer. Beautify, minify, convert to XML/YAML/CSV, and diff JSON — 100% client-side, nothing ever leaves your browser." />
     <link rel="canonical" href="https://jsonspace.io/" />

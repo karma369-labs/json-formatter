@@ -6,6 +6,7 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { json } from '@codemirror/lang-json';
 import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
+import { sizeBucket, trackThrottled } from '../lib/analytics';
 
 interface JsonEditorProps {
   value: string;
@@ -82,7 +83,16 @@ export function JsonEditor({ value, onChange }: JsonEditorProps) {
           obsidianTheme,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
-              onChangeRef.current(update.state.doc.toString());
+              const next = update.state.doc.toString();
+              onChangeRef.current(next);
+              // Keystroke-driven, so throttle hard — and only for edits the
+              // user actually typed, not the programmatic value dispatch below.
+              const isUserEdit = update.transactions.some(
+                (tr) => tr.isUserEvent('input') || tr.isUserEvent('delete')
+              );
+              if (isUserEdit) {
+                trackThrottled('json_edit', { size_bucket: sizeBucket(next.length) }, 5000);
+              }
             }
           }),
         ],

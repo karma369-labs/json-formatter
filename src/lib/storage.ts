@@ -4,6 +4,10 @@ import { nanoid } from 'nanoid';
 const CURRENT_DOC_KEY = 'jsonfmt:current-doc';
 const SNAPSHOTS_KEY = 'jsonfmt:snapshots';
 const THEME_KEY = 'jsonfmt:theme';
+// Must stay character-for-character identical to the key read by the inline
+// consent-default script in index.html — a mismatch silently makes the cookie
+// banner forget the visitor's choice on every reload.
+const CONSENT_KEY = 'jsonfmt:cookie-consent';
 const MAX_SNAPSHOTS = 50;
 
 export interface Snapshot {
@@ -72,5 +76,24 @@ export function saveTheme(theme: string): void {
     localStorage.setItem(THEME_KEY, theme);
   } catch {
     // not critical, fail silently
+  }
+}
+
+export type ConsentValue = 'granted' | 'denied';
+
+export function loadConsent(): ConsentValue | null {
+  try {
+    const value = localStorage.getItem(CONSENT_KEY);
+    return value === 'granted' || value === 'denied' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveConsent(value: ConsentValue): void {
+  try {
+    localStorage.setItem(CONSENT_KEY, value);
+  } catch {
+    // private browsing / quota — the banner will just ask again next visit
   }
 }

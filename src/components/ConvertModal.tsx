@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Copy, Check, Download, FileCode, FileSpreadsheet, FileText, Braces, Quote, FileJson2, FileType } from 'lucide-react';
 import { convertJson, type ConverterFormat } from '../lib/converters';
 import { useModalFocus } from '../hooks/useModalFocus';
+import { sizeBucket, track } from '../lib/analytics';
 import './ConvertModal.css';
 
 interface ConvertModalProps {
@@ -44,6 +45,7 @@ export function ConvertModal({ raw, parsed, onClose }: ConvertModalProps) {
     await navigator.clipboard.writeText(output);
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
+    track('convert_copy', { convert_format: format, size_bucket: sizeBucket(output.length) });
   }
 
   function handleDownload() {
@@ -55,6 +57,7 @@ export function ConvertModal({ raw, parsed, onClose }: ConvertModalProps) {
     a.download = `converted-${Date.now()}.${fileExtension}`;
     a.click();
     URL.revokeObjectURL(url);
+    track('convert_download', { convert_format: format, size_bucket: sizeBucket(output.length) });
   }
 
   return (
@@ -88,7 +91,10 @@ export function ConvertModal({ raw, parsed, onClose }: ConvertModalProps) {
               role="tab"
               aria-selected={format === value}
               className={`convert-tab${format === value ? ' selected' : ''}`}
-              onClick={() => setFormat(value)}
+              onClick={() => {
+                track('convert_format_select', { convert_format: value });
+                setFormat(value);
+              }}
             >
               <Icon size={13} />
               <span>{label}</span>

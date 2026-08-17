@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import {
   Code2,
   Copy,
@@ -28,8 +28,9 @@ import { SnapshotsPanel } from './components/SnapshotsPanel';
 import { Toolbar } from './components/Toolbar';
 import { TreeView } from './components/TreeView';
 import type { Command } from './components/CommandPalette';
-import { useJsonEditor } from './hooks/useJsonEditor';
+import { useJsonEditor, type ViewMode } from './hooks/useJsonEditor';
 import { useTheme } from './hooks/useTheme';
+import { sizeBucket, track, trackPageView } from './lib/analytics';
 import './App.css';
 
 const GraphView = lazy(() => import('./components/GraphView').then((m) => ({ default: m.GraphView })));
@@ -65,6 +66,14 @@ function formatBytes(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
+const VIEW_MODE_TITLES: Record<ViewMode, string> = {
+  text: 'Raw Editor',
+  tree: 'Tree Explorer',
+  graph: 'Graph Explorer',
+};
+
+type ActionSource = 'toolbar' | 'shortcut' | 'palette';
+
 function App() {
   const editor = useJsonEditor();
   const { state } = editor;
@@ -84,6 +93,14 @@ function App() {
   const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
   const modKey = isMac ? '⌘' : 'Ctrl+';
 
+  // Kept in a ref (same pattern as JsonEditor's onChangeRef) so the shortcut
+  // effect below doesn't resubscribe on every render just to see a fresh
+  // runAction — and so we don't hand-write a useCallback the compiler handles.
+  const runActionRef = useRef(runAction);
+  useEffect(() => {
+    runActionRef.current = runAction;
+  });
+
   // Global Keyboard Shortcuts: Cmd/Ctrl+Enter format, +M minify, +S sort,
   // +K command palette, +B toggle sidebar, Escape closes the topmost overlay.
   useEffect(() => {
@@ -98,29 +115,68 @@ function App() {
       if (!mod || e.shiftKey) return;
       if (e.key === 'Enter') {
         e.preventDefault();
-        if (!state.error) editor.format();
+        if (!state.error) runActionRef.current('format', 'shortcut');
       } else if (e.key.toLowerCase() === 'm') {
         e.preventDefault();
-        if (!state.error) editor.minify();
+        if (!state.error) runActionRef.current('minify', 'shortcut');
       } else if (e.key.toLowerCase() === 's') {
         e.preventDefault();
-        if (!state.error) editor.sortKeys();
+        if (!state.error) runActionRef.current('sort_keys', 'shortcut');
       } else if (e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        setShowPalette((v) => !v);
+        // Track outside the updater — StrictMode double-invokes updaters.
+        if (!showPalette) track('modal_open', { modal: 'palette', source: 'shortcut' });
+        setShowPalette(!showPalette);
       } else if (e.key.toLowerCase() === 'b') {
         e.preventDefault();
-        setSidebarCollapsed((c) => !c);
+        track('sidebar_toggle', { collapsed: !sidebarCollapsed, source: 'shortcut' });
+        setSidebarCollapsed(!sidebarCollapsed);
       }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [editor, state.error, showPalette, showConvert, showCompare]);
+  }, [state.error, showPalette, showConvert, showCompare, sidebarCollapsed]);
+
+  // Every format/minify/sort/repair entry point (toolbar, keyboard, palette)
+  // funnels through here so the event carries where it was triggered from.
+  function runAction(action: 'format' | 'minify' | 'sort_keys' | 'repair', source: ActionSource) {
+    track('json_action', {
+      action,
+      source,
+      size_bucket: sizeBucket(state.raw.length),
+      had_error: !!state.error,
+    });
+    if (action === 'format') editor.format();
+    else if (action === 'minify') editor.minify();
+    else if (action === 'sort_keys') editor.sortKeys();
+    else editor.repair();
+  }
+
+  function handleViewModeChange(mode: ViewMode, source: ActionSource) {
+    if (mode !== state.viewMode) {
+      track('view_mode_change', { view_mode: mode, source });
+      trackPageView(`/${mode}`, `JSON Studio — ${VIEW_MODE_TITLES[mode]}`);
+    }
+    editor.setViewMode(mode);
+  }
+
+  function handleSplitViewChange(split: boolean, source: ActionSource) {
+    track('split_view_toggle', { enabled: split, view_mode: state.viewMode, source });
+    editor.setSplitView(split);
+  }
+
+  // fileName is deliberately NOT sent — only its extension, which is shape.
+  function handleFileLoad(content: string, fileName: string, source: 'upload' | 'drop') {
+    const ext = fileName.includes('.') ? fileName.split('.').pop()?.toLowerCase() : undefined;
+    track('file_loaded', { source, file_extension: ext, size_bucket: sizeBucket(content.length) });
+    editor.loadContent(content);
+  }
 
   async function handleCopyRaw() {
     await navigator.clipboard.writeText(state.raw);
     setCopiedRaw(true);
     setTimeout(() => setCopiedRaw(false), 1200);
+    track('copy_json', { size_bucket: sizeBucket(state.raw.length) });
   }
 
   function handleDownload() {
@@ -131,39 +187,54 @@ function App() {
     a.download = `json-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    track('download_json', { size_bucket: sizeBucket(state.raw.length) });
   }
 
   function handleClear() {
+    track('clear_editor', { size_bucket: sizeBucket(state.raw.length) });
     editor.setRaw('');
   }
 
   function handleLoadSample(content?: string) {
+    track('load_sample', { is_default_sample: !content });
     editor.loadContent(content || SAMPLE_JSON);
+  }
+
+  function handleToggleTheme(e?: React.MouseEvent) {
+    track('theme_toggle', { theme_to: theme === 'dark' ? 'light' : 'dark' });
+    toggleTheme(e);
+  }
+
+  function handleOpenModal(modal: 'convert' | 'compare' | 'palette', source: ActionSource) {
+    track('modal_open', { modal, source });
+    if (modal === 'convert') setShowConvert(true);
+    else if (modal === 'compare') setShowCompare(true);
+    else setShowPalette(true);
   }
 
   const hasContent = !!state.raw.trim();
   const commands: Command[] = [
-    { id: 'format', label: 'Format & Beautify JSON', shortcut: `${modKey}Enter`, icon: Wand2, action: editor.format, disabled: !hasContent || !!state.error },
-    { id: 'minify', label: 'Minify JSON', shortcut: `${modKey}M`, icon: Minimize2, action: editor.minify, disabled: !hasContent || !!state.error },
-    { id: 'sort', label: 'Sort Keys Alphabetically', shortcut: `${modKey}S`, icon: ArrowUpDown, action: editor.sortKeys, disabled: !hasContent || !!state.error },
-    { id: 'repair', label: 'Auto-Fix JSON Errors', icon: Wrench, action: editor.repair, disabled: !state.error },
-    { id: 'convert', label: 'Convert JSON (XML, CSV, TSV, YAML…)', icon: Shuffle, action: () => setShowConvert(true), disabled: !hasContent || !!state.error },
-    { id: 'compare', label: 'Compare JSON Documents', icon: GitCompare, action: () => setShowCompare(true), disabled: !hasContent || !!state.error },
-    { id: 'view-raw', label: 'View: Raw Editor', icon: Code2, action: () => editor.setViewMode('text') },
-    { id: 'view-tree', label: 'View: Tree Explorer', icon: Network, action: () => editor.setViewMode('tree'), disabled: !hasContent || !!state.error },
-    { id: 'view-graph', label: 'View: Graph Explorer', icon: Workflow, action: () => editor.setViewMode('graph'), disabled: !hasContent || !!state.error },
+    { id: 'format', label: 'Format & Beautify JSON', shortcut: `${modKey}Enter`, icon: Wand2, action: () => runAction('format', 'palette'), disabled: !hasContent || !!state.error },
+    { id: 'minify', label: 'Minify JSON', shortcut: `${modKey}M`, icon: Minimize2, action: () => runAction('minify', 'palette'), disabled: !hasContent || !!state.error },
+    { id: 'sort', label: 'Sort Keys Alphabetically', shortcut: `${modKey}S`, icon: ArrowUpDown, action: () => runAction('sort_keys', 'palette'), disabled: !hasContent || !!state.error },
+    { id: 'repair', label: 'Auto-Fix JSON Errors', icon: Wrench, action: () => runAction('repair', 'palette'), disabled: !state.error },
+    { id: 'convert', label: 'Convert JSON (XML, CSV, TSV, YAML…)', icon: Shuffle, action: () => handleOpenModal('convert', 'palette'), disabled: !hasContent || !!state.error },
+    { id: 'compare', label: 'Compare JSON Documents', icon: GitCompare, action: () => handleOpenModal('compare', 'palette'), disabled: !hasContent || !!state.error },
+    { id: 'view-raw', label: 'View: Raw Editor', icon: Code2, action: () => handleViewModeChange('text', 'palette') },
+    { id: 'view-tree', label: 'View: Tree Explorer', icon: Network, action: () => handleViewModeChange('tree', 'palette'), disabled: !hasContent || !!state.error },
+    { id: 'view-graph', label: 'View: Graph Explorer', icon: Workflow, action: () => handleViewModeChange('graph', 'palette'), disabled: !hasContent || !!state.error },
     {
       id: 'view-split-toggle',
       label: state.splitView ? 'View: Disable Split' : 'View: Split with Raw Editor',
       icon: Columns,
-      action: () => editor.setSplitView(!state.splitView),
+      action: () => handleSplitViewChange(!state.splitView, 'palette'),
       disabled: state.viewMode === 'text' || !hasContent || !!state.error,
     },
     {
       id: 'theme',
       label: theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme',
       icon: theme === 'dark' ? Sun : Moon,
-      action: toggleTheme,
+      action: handleToggleTheme,
     },
     { id: 'copy', label: 'Copy JSON to Clipboard', icon: Copy, action: handleCopyRaw, disabled: !hasContent },
     { id: 'download', label: 'Download as .json', icon: Download, action: handleDownload, disabled: !hasContent },
@@ -173,20 +244,26 @@ function App() {
       label: sidebarCollapsed ? 'Show Snapshots Sidebar' : 'Hide Snapshots Sidebar',
       shortcut: `${modKey}B`,
       icon: sidebarCollapsed ? PanelLeftOpen : PanelLeftClose,
-      action: () => setSidebarCollapsed((c) => !c),
+      action: () => {
+        track('sidebar_toggle', { collapsed: !sidebarCollapsed, source: 'palette' });
+        setSidebarCollapsed(!sidebarCollapsed);
+      },
     },
     { id: 'sample', label: 'Load Sample JSON', icon: FileJson, action: () => handleLoadSample() },
   ];
 
   return (
-    <FileDropZone onFile={editor.loadContent}>
+    <FileDropZone onFile={(content, fileName) => handleFileLoad(content, fileName, 'drop')}>
       <div className="app-container">
         <header className="top-nav">
           <div className="brand-title">
             <button
               type="button"
               className="button-tertiary button-icon-only"
-              onClick={() => setSidebarCollapsed((c) => !c)}
+              onClick={() => {
+                track('sidebar_toggle', { collapsed: !sidebarCollapsed, source: 'toolbar' });
+                setSidebarCollapsed(!sidebarCollapsed);
+              }}
               title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
               aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
             >
@@ -209,7 +286,7 @@ function App() {
             <button
               type="button"
               className="button-tertiary"
-              onClick={() => setShowPalette(true)}
+              onClick={() => handleOpenModal('palette', 'toolbar')}
               title={`Command palette (${modKey}K)`}
             >
               <CommandIcon size={14} />
@@ -220,7 +297,7 @@ function App() {
             <button
               type="button"
               className="button-tertiary button-icon-only"
-              onClick={(e) => toggleTheme(e)}
+              onClick={(e) => handleToggleTheme(e)}
               title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
               aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
             >
@@ -272,7 +349,10 @@ function App() {
           )}
           <SnapshotsPanel
             raw={state.raw}
-            onLoad={editor.loadContent}
+            onLoad={(content) => {
+              track('snapshot_load', { size_bucket: sizeBucket(content.length) });
+              editor.loadContent(content);
+            }}
             collapsed={sidebarCollapsed}
           />
 
@@ -283,17 +363,20 @@ function App() {
               hasContent={!!state.raw.trim()}
               viewMode={state.viewMode}
               splitView={state.splitView}
-              onIndentChange={editor.setIndent}
-              onFormat={editor.format}
-              onMinify={editor.minify}
-              onSortKeys={editor.sortKeys}
-              onRepair={editor.repair}
-              onViewModeChange={editor.setViewMode}
-              onSplitViewChange={editor.setSplitView}
-              onFileUpload={editor.loadContent}
+              onIndentChange={(next) => {
+                track('indent_change', { indent: String(next) });
+                editor.setIndent(next);
+              }}
+              onFormat={() => runAction('format', 'toolbar')}
+              onMinify={() => runAction('minify', 'toolbar')}
+              onSortKeys={() => runAction('sort_keys', 'toolbar')}
+              onRepair={() => runAction('repair', 'toolbar')}
+              onViewModeChange={(mode) => handleViewModeChange(mode, 'toolbar')}
+              onSplitViewChange={(split) => handleSplitViewChange(split, 'toolbar')}
+              onFileUpload={(content, fileName) => handleFileLoad(content, fileName, 'upload')}
               onLoadSample={handleLoadSample}
-              onOpenConvert={() => setShowConvert(true)}
-              onOpenCompare={() => setShowCompare(true)}
+              onOpenConvert={() => handleOpenModal('convert', 'toolbar')}
+              onOpenCompare={() => handleOpenModal('compare', 'toolbar')}
             />
 
             <ErrorBanner error={state.error} />

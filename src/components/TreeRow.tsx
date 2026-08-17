@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronRight, Copy, ExternalLink, Check } from 'lucide-react';
 import { isHexColor } from '../lib/color';
 import type { FlatRow } from '../lib/flattenTree';
+import { sizeBucket, track } from '../lib/analytics';
 import './TreeNode.css';
 
 function isUrl(str: string): boolean {
@@ -49,6 +50,8 @@ export function TreeRow({ row, filter, onToggle }: TreeRowProps) {
   async function handleCopyPath(e: React.MouseEvent) {
     e.stopPropagation();
     await navigator.clipboard.writeText(path);
+    // Depth, not the path string — a JSONPath is derived from the user's keys.
+    track('tree_copy_path', { path_depth: path.split(/[.[]/).length - 1 });
     setCopiedField('path');
     setTimeout(() => setCopiedField(null), 1200);
   }
@@ -57,6 +60,7 @@ export function TreeRow({ row, filter, onToggle }: TreeRowProps) {
     e.stopPropagation();
     const valString = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
     await navigator.clipboard.writeText(valString);
+    track('tree_copy_value', { size_bucket: sizeBucket(valString.length) });
     setCopiedField('val');
     setTimeout(() => setCopiedField(null), 1200);
   }

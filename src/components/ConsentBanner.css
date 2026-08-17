@@ -1,0 +1,67 @@
+.consent-banner {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  width: calc(100% - 32px);
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 22px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--rounded-lg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  animation: consent-banner-in 220ms var(--ease-out);
+}
+
+@keyframes consent-banner-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .consent-banner {
+    animation: none;
+  }
+}
+
+.consent-banner-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.consent-banner-copy p {
+  margin: 0;
+  color: var(--ink-muted);
+  line-height: 1.55;
+}
+
+.consent-banner-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--ink-subtle);
+}
+
+.consent-banner-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .consent-banner {
+    width: calc(100% - 24px);
+    bottom: 12px;
+    padding: 16px 18px;
+  }
+}

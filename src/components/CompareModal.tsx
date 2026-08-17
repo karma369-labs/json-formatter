@@ -1,9 +1,10 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { X, Upload, Plus, Minus, Pencil, GitCompare } from 'lucide-react';
 import { parseJson, type ParseError } from '../lib/jsonParser';
 import { diffJson, summarizeDiff, previewValue, type DiffOp } from '../lib/diff';
 import { readTextFile } from '../lib/file';
 import { useModalFocus } from '../hooks/useModalFocus';
+import { sizeBucket, track } from '../lib/analytics';
 import './CompareModal.css';
 
 interface CompareModalProps {
@@ -34,11 +35,24 @@ export function CompareModal({ raw, parsed, error, onClose }: CompareModalProps)
   const summary = summarizeDiff(ops);
   const canDiff = !error && bRaw.trim() !== '' && !bError;
 
+  // Counts only — never the diffed paths or values.
+  useEffect(() => {
+    if (!canDiff) return;
+    track('compare_run', {
+      added: summary.added,
+      removed: summary.removed,
+      changed: summary.changed,
+      identical: summary.added + summary.removed + summary.changed === 0,
+    });
+  }, [canDiff, summary.added, summary.removed, summary.changed]);
+
   async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    setBRaw(await readTextFile(file));
+    const text = await readTextFile(file);
+    track('compare_file_loaded', { size_bucket: sizeBucket(text.length) });
+    setBRaw(text);
   }
 
   return (

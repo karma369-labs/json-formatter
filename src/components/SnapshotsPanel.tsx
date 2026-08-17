@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from 'react';
 import { Bookmark, Plus, Trash2, Copy, Check, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 import { deleteSnapshot, listSnapshots, saveSnapshot, type Snapshot } from '../lib/storage';
+import { sizeBucket, track } from '../lib/analytics';
 import './SnapshotsPanel.css';
 
 interface SnapshotsPanelProps {
@@ -23,12 +24,15 @@ export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollaps
     const snapshot = saveSnapshot(label, raw);
     setSnapshots((prev) => [snapshot, ...prev]);
     setName('');
+    // Only whether a name was typed, never the name itself.
+    track('snapshot_save', { named: !!trimmed, size_bucket: sizeBucket(raw.length) });
   }
 
   function handleDelete(id: string, e: React.MouseEvent) {
     e.stopPropagation();
     deleteSnapshot(id);
     setSnapshots((prev) => prev.filter((s) => s.id !== id));
+    track('snapshot_delete');
   }
 
   async function handleCopy(content: string, id: string, e: React.MouseEvent) {
@@ -36,6 +40,7 @@ export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollaps
     await navigator.clipboard.writeText(content);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 1200);
+    track('snapshot_copy', { size_bucket: sizeBucket(content.length) });
   }
 
   return (
