@@ -92,13 +92,27 @@ function reducer(state: JsonEditorState, action: Action): JsonEditorState {
   }
 }
 
+// Always starts empty rather than calling loadCurrentDoc() here: this
+// initializer runs during render (including server/prerender render, where
+// localStorage doesn't exist), so seeding it with a returning visitor's saved
+// document would make the client's first render disagree with the static
+// HTML and trigger a large hydration mismatch across the tree/editor view.
+// The saved document is loaded after mount instead — see the effect below.
 function initState(): JsonEditorState {
-  const raw = loadCurrentDoc() ?? '';
+  const raw = '';
   return { raw, indent: 2, viewMode: 'tree', splitView: true, ...reparse(raw) };
 }
 
 export function useJsonEditor() {
   const [state, dispatch] = useReducer(reducer, undefined, initState);
+
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    const saved = loadCurrentDoc();
+    if (saved) dispatch({ type: 'loadContent', raw: saved });
+  }, []);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {

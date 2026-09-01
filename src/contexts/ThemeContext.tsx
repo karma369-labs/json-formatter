@@ -1,22 +1,33 @@
-import { useLayoutEffect, useState, type ReactNode, type MouseEvent as ReactMouseEvent } from 'react';
+import { useLayoutEffect, useSyncExternalStore, type ReactNode, type MouseEvent as ReactMouseEvent } from 'react';
 import { flushSync } from 'react-dom';
-import { saveTheme } from '../lib/storage';
-import { ThemeContext, getInitialTheme, type Theme } from './theme-context';
+import {
+  ThemeContext,
+  getServerThemeSnapshot,
+  getThemeSnapshot,
+  setStoredTheme,
+  subscribeTheme,
+} from './theme-context';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  // useSyncExternalStore rather than useState+effect: the real theme lives in
+  // localStorage/matchMedia, unavailable during server/prerender rendering.
+  // getServerThemeSnapshot lets the server and the client's first render
+  // agree on a 'dark' placeholder; React reconciles to the real client value
+  // right after hydration on its own, with no manual effect+setState and no
+  // hydration-mismatch warning.
+  const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerThemeSnapshot);
 
   useLayoutEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    saveTheme(theme);
   }, [theme]);
 
   function toggleTheme(event?: ReactMouseEvent | MouseEvent | { clientX: number; clientY: number }) {
+    const next = theme === 'dark' ? 'light' : 'dark';
     const isReduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const isSupported = typeof document !== 'undefined' && 'startViewTransition' in document;
 
     if (!isSupported || isReduced) {
-      setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+      setStoredTheme(next);
       return;
     }
 
@@ -30,7 +41,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     const transition = (document as unknown as { startViewTransition: (cb: () => void) => { ready: Promise<void> } }).startViewTransition(() => {
       flushSync(() => {
-        setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+        setStoredTheme(next);
       });
     });
 

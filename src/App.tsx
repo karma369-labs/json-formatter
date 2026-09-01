@@ -28,6 +28,7 @@ import { SnapshotsPanel } from './components/SnapshotsPanel';
 import { Toolbar } from './components/Toolbar';
 import { TreeView } from './components/TreeView';
 import type { Command } from './components/CommandPalette';
+import { useHydrated, useMediaQuery } from './hooks/useClientOnly';
 import { useJsonEditor, type ViewMode } from './hooks/useJsonEditor';
 import { useTheme } from './hooks/useTheme';
 import { sizeBucket, track, trackPageView } from './lib/analytics';
@@ -78,9 +79,14 @@ function App() {
   const editor = useJsonEditor();
   const { state } = editor;
   const { theme, toggleTheme } = useTheme();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth <= 768
-  );
+  // Collapsed by default on narrow viewports, but an explicit user toggle wins
+  // from then on. Split this way (rather than seeding useState from
+  // window.innerWidth) because a useState initializer also runs during
+  // hydration, where the prerendered HTML was built with no window at all —
+  // on a phone that disagreement is a hydration mismatch.
+  const isNarrow = useMediaQuery('(max-width: 768px)');
+  const [sidebarOverride, setSidebarOverride] = useState<boolean | null>(null);
+  const sidebarCollapsed = sidebarOverride ?? isNarrow;
   const [copiedRaw, setCopiedRaw] = useState(false);
   const [showConvert, setShowConvert] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
@@ -90,7 +96,11 @@ function App() {
   const isSplit = state.splitView && state.viewMode !== 'text';
   const byteSize = new Blob([state.raw]).size;
 
-  const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+  // Gated on useHydrated so the server render and the client's hydration
+  // render both produce 'Ctrl+'; the real platform key swaps in right after.
+  // Reading navigator.platform unguarded here would mismatch on every Mac.
+  const hydrated = useHydrated();
+  const isMac = hydrated && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
   const modKey = isMac ? '⌘' : 'Ctrl+';
 
   // Kept in a ref (same pattern as JsonEditor's onChangeRef) so the shortcut
@@ -130,7 +140,7 @@ function App() {
       } else if (e.key.toLowerCase() === 'b') {
         e.preventDefault();
         track('sidebar_toggle', { collapsed: !sidebarCollapsed, source: 'shortcut' });
-        setSidebarCollapsed(!sidebarCollapsed);
+        setSidebarOverride(!sidebarCollapsed);
       }
     }
     window.addEventListener('keydown', handleKeyDown);
@@ -246,7 +256,7 @@ function App() {
       icon: sidebarCollapsed ? PanelLeftOpen : PanelLeftClose,
       action: () => {
         track('sidebar_toggle', { collapsed: !sidebarCollapsed, source: 'palette' });
-        setSidebarCollapsed(!sidebarCollapsed);
+        setSidebarOverride(!sidebarCollapsed);
       },
     },
     { id: 'sample', label: 'Load Sample JSON', icon: FileJson, action: () => handleLoadSample() },
@@ -262,7 +272,7 @@ function App() {
               className="button-tertiary button-icon-only"
               onClick={() => {
                 track('sidebar_toggle', { collapsed: !sidebarCollapsed, source: 'toolbar' });
-                setSidebarCollapsed(!sidebarCollapsed);
+                setSidebarOverride(!sidebarCollapsed);
               }}
               title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
               aria-label={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
@@ -343,7 +353,7 @@ function App() {
           {!sidebarCollapsed && (
             <div
               className="sidebar-backdrop"
-              onClick={() => setSidebarCollapsed(true)}
+              onClick={() => setSidebarOverride(true)}
               aria-hidden="true"
             />
           )}

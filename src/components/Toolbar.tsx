@@ -20,6 +20,7 @@ import {
 import './Toolbar.css';
 import type { IndentOption, ParseError } from '../lib/jsonParser';
 import type { ViewMode } from '../hooks/useJsonEditor';
+import { useHydrated } from '../hooks/useClientOnly';
 import { readTextFile } from '../lib/file';
 import { TEST_PAYLOADS, type SamplePayload } from '../data/samples';
 
@@ -106,7 +107,10 @@ export function Toolbar({
     }
   }
 
-  const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+  // See the matching note in App.tsx — navigator.platform read unguarded in a
+  // render path mismatches during hydration on every Mac.
+  const hydrated = useHydrated();
+  const isMac = hydrated && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
   const modKey = isMac ? '⌘' : 'Ctrl+';
 
   return (

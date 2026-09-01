@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, hydrateRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { ConsentBanner } from './components/ConsentBanner.tsx'
@@ -19,11 +19,21 @@ track('app_loaded', {
   })(),
 });
 
-createRoot(document.getElementById('root')!).render(
+const container = document.getElementById('root')!;
+const tree = (
   <StrictMode>
     <ThemeProvider>
       <App />
       <ConsentBanner />
     </ThemeProvider>
-  </StrictMode>,
-)
+  </StrictMode>
+);
+
+// The prerender step fills #root with static markup; dev's index.html never
+// runs that step, so the container is always empty there and this falls
+// through to a normal client render.
+if (container.hasChildNodes()) {
+  hydrateRoot(container, tree);
+} else {
+  createRoot(container).render(tree);
+}

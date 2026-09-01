@@ -1,7 +1,8 @@
-import { useState, type ChangeEvent } from 'react';
+import { useMemo, useState, type ChangeEvent } from 'react';
 import { Bookmark, Plus, Trash2, Copy, Check, ChevronLeft, ChevronRight, Inbox } from 'lucide-react';
 import { deleteSnapshot, listSnapshots, saveSnapshot, type Snapshot } from '../lib/storage';
 import { sizeBucket, track } from '../lib/analytics';
+import { useHydrated } from '../hooks/useClientOnly';
 import './SnapshotsPanel.css';
 
 interface SnapshotsPanelProps {
@@ -12,7 +13,19 @@ interface SnapshotsPanelProps {
 }
 
 export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollapse }: SnapshotsPanelProps) {
-  const [snapshots, setSnapshots] = useState<Snapshot[]>(() => listSnapshots());
+  // listSnapshots() reads localStorage, which doesn't exist during the
+  // prerender — and a useState initializer runs again during hydration, so
+  // seeding state with it would mismatch for anyone with saved snapshots.
+  // Instead the stored list is only read once hydrated, and local edits
+  // (save/delete) take over via `edited` from the first mutation onward.
+  const hydrated = useHydrated();
+  const stored = useMemo(() => (hydrated ? listSnapshots() : []), [hydrated]);
+  const [edited, setEdited] = useState<Snapshot[] | null>(null);
+  const snapshots = edited ?? stored;
+  // Forwards the functional form through to setEdited rather than applying it
+  // to this render's `snapshots`, so batched updates still compose correctly.
+  const setSnapshots = (update: (prev: Snapshot[]) => Snapshot[]) =>
+    setEdited((prev) => update(prev ?? stored));
   const [name, setName] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 

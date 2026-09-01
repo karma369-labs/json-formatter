@@ -7,6 +7,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#863bff" />
 
+    <!-- Applies the visitor's theme before first paint. The prerendered HTML is
+         built with no browser APIs, so it ships without a data-theme attribute
+         and CSS falls back to the dark `:root` block — without this a
+         light-theme visitor would flash dark until React's first layout effect.
+         Must mirror readTheme() in src/contexts/theme-context.ts, and the key
+         must match storage.ts's THEME_KEY character-for-character. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('jsonfmt:theme');
+          if (t !== 'dark' && t !== 'light') {
+            t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
+
     <!-- Consent Mode v2 default — must run synchronously BEFORE gtag.js loads, so a
          returning visitor who already accepted isn't re-blocked on every reload.
          Fails closed: if localStorage is unreadable, consent stays denied. -->
