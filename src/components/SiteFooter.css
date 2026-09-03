@@ -1,0 +1,28 @@
+.site-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--surface-1);
+  border-top: 1px solid var(--hairline);
+  font-size: 11px;
+  color: var(--ink-subtle);
+}
+
+.site-footer a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.site-footer a:hover {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.site-footer-sep {
+  color: var(--ink-tertiary);
+}

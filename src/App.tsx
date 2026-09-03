@@ -24,6 +24,7 @@ import {
 import { ErrorBanner } from './components/ErrorBanner';
 import { FileDropZone } from './components/FileDropZone';
 import { JsonEditor } from './components/JsonEditor';
+import { SiteFooter } from './components/SiteFooter';
 import { SnapshotsPanel } from './components/SnapshotsPanel';
 import { Toolbar } from './components/Toolbar';
 import { TreeView } from './components/TreeView';
@@ -444,6 +445,8 @@ function App() {
             </div>
           </main>
         </div>
+
+        <SiteFooter />
 
         <Suspense
           fallback={
