@@ -1,0 +1,47 @@
+# JSON Studio — Apache config for Namecheap shared hosting.
+# Vite copies everything in public/ into dist/, so this ships to public_html.
+#
+# Goal: one canonical URL per page (https + www + no trailing slash), each tool
+# served from its own prerendered dist/<path>/index.html, and any unknown path
+# falling back to the app shell so client-side routing still boots.
+
+Options -MultiViews
+DirectoryIndex index.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Force HTTPS and the www host in a single external 301. Runs first so the
+  # canonical host is settled before any internal rewrite below.
+  RewriteCond %{HTTPS} off [OR]
+  RewriteCond %{HTTP_HOST} !^www\. [NC]
+  RewriteRule ^ https://www.jsonspace.io%{REQUEST_URI} [L,R=301]
+
+  # Drop trailing slashes (except the root) so /validator/ 301s to /validator,
+  # matching the no-trailing-slash canonical tags the prerender stamps in.
+  RewriteCond %{REQUEST_URI} !^/$
+  RewriteRule ^(.+)/$ /$1 [R=301,L]
+
+  # Serve the prerendered file for a clean URL without redirecting, e.g.
+  # /validator -> /validator/index.html. Keeps the address bar on /validator.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME}/index.html -f
+  RewriteRule ^ %{REQUEST_URI}/index.html [L]
+
+  # SPA fallback: any path that is not a real file or directory and has no
+  # prerendered index.html loads the home shell so React can route client-side.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ /index.html [L]
+</IfModule>
+
+# Hashed asset filenames are immutable — cache them hard. HTML is regenerated
+# each deploy, so it must always be revalidated.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|woff2?|svg|png|jpg|jpeg|gif|webp|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>

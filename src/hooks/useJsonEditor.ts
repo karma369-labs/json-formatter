@@ -98,13 +98,18 @@ function reducer(state: JsonEditorState, action: Action): JsonEditorState {
 // document would make the client's first render disagree with the static
 // HTML and trigger a large hydration mismatch across the tree/editor view.
 // The saved document is loaded after mount instead — see the effect below.
-function initState(): JsonEditorState {
+//
+// viewMode is seeded from the route's default view. That value is derived from
+// the URL, which is identical on the server render and the client's hydration
+// render, so it stays SSR-safe. A 'graph' default still must not mount the lazy
+// GraphView during SSR — App gates that render behind useHydrated().
+function initState(initialView: ViewMode): JsonEditorState {
   const raw = '';
-  return { raw, indent: 2, viewMode: 'tree', splitView: true, ...reparse(raw) };
+  return { raw, indent: 2, viewMode: initialView, splitView: true, ...reparse(raw) };
 }
 
-export function useJsonEditor() {
-  const [state, dispatch] = useReducer(reducer, undefined, initState);
+export function useJsonEditor(initialView: ViewMode = 'tree') {
+  const [state, dispatch] = useReducer(reducer, initialView, initState);
 
   const restored = useRef(false);
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Code2,
   Copy,
@@ -32,6 +33,7 @@ import type { Command } from './components/CommandPalette';
 import { useHydrated, useMediaQuery } from './hooks/useClientOnly';
 import { useJsonEditor, type ViewMode } from './hooks/useJsonEditor';
 import { useTheme } from './hooks/useTheme';
+import { getRouteByPath } from './routes';
 import { sizeBucket, track, trackPageView } from './lib/analytics';
 import './App.css';
 
@@ -77,7 +79,12 @@ const VIEW_MODE_TITLES: Record<ViewMode, string> = {
 type ActionSource = 'toolbar' | 'shortcut' | 'palette';
 
 function App() {
-  const editor = useJsonEditor();
+  // The URL selects which tool this is. Server (StaticRouter) and client
+  // (BrowserRouter) both put the same location in context, so the route
+  // resolves identically on the SSR render and the hydration render.
+  const location = useLocation();
+  const route = getRouteByPath(location.pathname);
+  const editor = useJsonEditor(route.defaultView);
   const { state } = editor;
   const { theme, toggleTheme } = useTheme();
   // Collapsed by default on narrow viewports, but an explicit user toggle wins
@@ -89,9 +96,14 @@ function App() {
   const [sidebarOverride, setSidebarOverride] = useState<boolean | null>(null);
   const sidebarCollapsed = sidebarOverride ?? isNarrow;
   const [copiedRaw, setCopiedRaw] = useState(false);
-  const [showConvert, setShowConvert] = useState(false);
-  const [showCompare, setShowCompare] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  // Manual modal opens (toolbar / command palette). Route-driven auto-opens
+  // (the /converter/* and /compare landings) are layered on top of these,
+  // gated behind useHydrated so a lazy modal never renders during SSR — that
+  // would throw React #419, the same reason viewMode's graph default is gated.
+  const [convertManual, setConvertManual] = useState(false);
+  const [compareManual, setCompareManual] = useState(false);
+  const [autoModalClosed, setAutoModalClosed] = useState(false);
 
   const lineCount = state.raw ? state.raw.split('\n').length : 0;
   const isSplit = state.splitView && state.viewMode !== 'text';
@@ -103,6 +115,12 @@ function App() {
   const hydrated = useHydrated();
   const isMac = hydrated && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
   const modKey = isMac ? '⌘' : 'Ctrl+';
+
+  // A converter/compare landing opens its modal once the app has hydrated.
+  // Manual opens win; closing either kind sets autoModalClosed so the route's
+  // auto-open doesn't immediately reappear.
+  const showConvert = convertManual || (hydrated && route.convertTo != null && !autoModalClosed);
+  const showCompare = compareManual || (hydrated && !!route.opensCompare && !autoModalClosed);
 
   // Kept in a ref (same pattern as JsonEditor's onChangeRef) so the shortcut
   // effect below doesn't resubscribe on every render just to see a fresh
@@ -119,8 +137,8 @@ function App() {
       const mod = e.metaKey || e.ctrlKey;
       if (e.key === 'Escape') {
         if (showPalette) setShowPalette(false);
-        else if (showConvert) setShowConvert(false);
-        else if (showCompare) setShowCompare(false);
+        else if (showConvert) { setConvertManual(false); setAutoModalClosed(true); }
+        else if (showCompare) { setCompareManual(false); setAutoModalClosed(true); }
         return;
       }
       if (!mod || e.shiftKey) return;
@@ -218,8 +236,8 @@ function App() {
 
   function handleOpenModal(modal: 'convert' | 'compare' | 'palette', source: ActionSource) {
     track('modal_open', { modal, source });
-    if (modal === 'convert') setShowConvert(true);
-    else if (modal === 'compare') setShowCompare(true);
+    if (modal === 'convert') setConvertManual(true);
+    else if (modal === 'compare') setCompareManual(true);
     else setShowPalette(true);
   }
 
@@ -431,20 +449,35 @@ function App() {
                       </span>
                     ) : null}
                   </div>
-                  <Suspense
-                    fallback={
-                      <div className="suspense-fallback">
-                        <div className="suspense-spinner" />
-                      </div>
-                    }
-                  >
-                    <GraphView parsed={state.parsed} error={state.error} />
-                  </Suspense>
+                  {hydrated ? (
+                    <Suspense
+                      fallback={
+                        <div className="suspense-fallback">
+                          <div className="suspense-spinner" />
+                        </div>
+                      }
+                    >
+                      <GraphView parsed={state.parsed} error={state.error} />
+                    </Suspense>
+                  ) : (
+                    // The /graph-viewer route seeds viewMode to 'graph', but
+                    // GraphView is React.lazy and renderToString can't await a
+                    // chunk (React #419). Render a placeholder during SSR and
+                    // the hydration render; the real graph mounts right after.
+                    <div className="suspense-fallback">
+                      <div className="suspense-spinner" />
+                    </div>
+                  )}
                 </div>
               ) : null}
             </div>
           </main>
         </div>
+
+        <section className="tool-intro" aria-label="About this tool">
+          <h1>{route.h1}</h1>
+          <p>{route.intro}</p>
+        </section>
 
         <SiteFooter />
 
@@ -456,7 +489,12 @@ function App() {
           }
         >
           {showConvert ? (
-            <ConvertModal raw={state.raw} parsed={state.parsed} onClose={() => setShowConvert(false)} />
+            <ConvertModal
+              raw={state.raw}
+              parsed={state.parsed}
+              initialFormat={convertManual ? undefined : route.convertTo}
+              onClose={() => { setConvertManual(false); setAutoModalClosed(true); }}
+            />
           ) : null}
 
           {showCompare ? (
@@ -464,7 +502,7 @@ function App() {
               raw={state.raw}
               parsed={state.parsed}
               error={state.error}
-              onClose={() => setShowCompare(false)}
+              onClose={() => { setCompareManual(false); setAutoModalClosed(true); }}
             />
           ) : null}
 

@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot, hydrateRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
 import { ConsentBanner } from './components/ConsentBanner.tsx'
@@ -22,10 +23,12 @@ track('app_loaded', {
 const container = document.getElementById('root')!;
 const tree = (
   <StrictMode>
-    <ThemeProvider>
-      <App />
-      <ConsentBanner />
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider>
+        <App />
+        <ConsentBanner />
+      </ThemeProvider>
+    </BrowserRouter>
   </StrictMode>
 );
 

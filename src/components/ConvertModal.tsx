@@ -9,6 +9,8 @@ interface ConvertModalProps {
   raw: string;
   parsed: unknown;
   onClose: () => void;
+  /** Preselect a target format (used by the /converter/* landing routes). */
+  initialFormat?: ConverterFormat;
 }
 
 const FORMATS: { value: ConverterFormat; label: string; icon: typeof FileCode }[] = [
@@ -22,8 +24,8 @@ const FORMATS: { value: ConverterFormat; label: string; icon: typeof FileCode }[
   { value: 'unescape', label: 'Unescape', icon: FileText },
 ];
 
-export function ConvertModal({ raw, parsed, onClose }: ConvertModalProps) {
-  const [format, setFormat] = useState<ConverterFormat>('xml');
+export function ConvertModal({ raw, parsed, onClose, initialFormat }: ConvertModalProps) {
+  const [format, setFormat] = useState<ConverterFormat>(initialFormat ?? 'xml');
   const [copied, setCopied] = useState(false);
   const containerRef = useModalFocus<HTMLDivElement>();
 
