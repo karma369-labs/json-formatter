@@ -1,0 +1,84 @@
+/* Layered on ConvertModal.css: same shell, plus an input pane beside the output. */
+.import-modal {
+  max-width: 960px;
+}
+
+.import-options {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-left: 12px;
+  flex-shrink: 0;
+}
+
+.import-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--ink-subtle);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.import-modal-panes {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.import-input {
+  min-height: 0;
+  resize: none;
+  border: none;
+  border-right: 1px solid var(--hairline);
+  outline: none;
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--surface-1);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+.import-input::placeholder {
+  color: var(--ink-subtle);
+  opacity: 0.6;
+}
+
+.import-input:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.import-output-pane {
+  height: 100%;
+}
+
+.import-load {
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .import-modal-panes {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+
+  .import-input {
+    border-right: none;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .import-options {
+    margin-left: 8px;
+  }
+}
+
+/* YAML errors arrive as a message plus a code frame with a caret. */
+.import-modal .convert-error {
+  white-space: pre-wrap;
+  font-family: var(--font-mono);
+}

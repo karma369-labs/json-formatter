@@ -3,6 +3,7 @@ import { Bookmark, Plus, Trash2, Copy, Check, ChevronLeft, ChevronRight, Inbox }
 import { deleteSnapshot, listSnapshots, saveSnapshot, type Snapshot } from '../lib/storage';
 import { sizeBucket, track } from '../lib/analytics';
 import { useHydrated } from '../hooks/useClientOnly';
+import { ConfirmDialog } from './ConfirmDialog';
 import './SnapshotsPanel.css';
 
 interface SnapshotsPanelProps {
@@ -28,6 +29,7 @@ export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollaps
     setEdited((prev) => update(prev ?? stored));
   const [name, setName] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Snapshot | null>(null);
 
   function handleSave() {
     const trimmed = name.trim();
@@ -41,8 +43,7 @@ export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollaps
     track('snapshot_save', { named: !!trimmed, size_bucket: sizeBucket(raw.length) });
   }
 
-  function handleDelete(id: string, e: React.MouseEvent) {
-    e.stopPropagation();
+  function handleDelete(id: string) {
     deleteSnapshot(id);
     setSnapshots((prev) => prev.filter((s) => s.id !== id));
     track('snapshot_delete');
@@ -138,7 +139,10 @@ export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollaps
                     <button
                       type="button"
                       className="button-tertiary button-icon-only snapshot-action-btn delete-btn"
-                      onClick={(e) => handleDelete(s.id, e)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPendingDelete(s);
+                      }}
                       title="Delete snapshot"
                       aria-label="Delete snapshot"
                     >
@@ -151,6 +155,19 @@ export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollaps
           )}
         </ul>
       </div>
+
+      {pendingDelete ? (
+        <ConfirmDialog
+          title="Delete this snapshot?"
+          message={`"${pendingDelete.name}" will be gone for good. This can't be undone.`}
+          confirmLabel="Delete"
+          onConfirm={() => {
+            handleDelete(pendingDelete.id);
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
+      ) : null}
     </aside>
   );
 }

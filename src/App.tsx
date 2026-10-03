@@ -20,8 +20,10 @@ import {
   Workflow,
   Columns,
   FileJson,
+  FileInput,
   Command as CommandIcon,
 } from 'lucide-react';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { ErrorBanner } from './components/ErrorBanner';
 import { FileDropZone } from './components/FileDropZone';
 import { JsonEditor } from './components/JsonEditor';
@@ -39,6 +41,7 @@ import './App.css';
 
 const GraphView = lazy(() => import('./components/GraphView').then((m) => ({ default: m.GraphView })));
 const ConvertModal = lazy(() => import('./components/ConvertModal').then((m) => ({ default: m.ConvertModal })));
+const ImportModal = lazy(() => import('./components/ImportModal').then((m) => ({ default: m.ImportModal })));
 const CompareModal = lazy(() => import('./components/CompareModal').then((m) => ({ default: m.CompareModal })));
 const CommandPalette = lazy(() => import('./components/CommandPalette').then((m) => ({ default: m.CommandPalette })));
 
@@ -103,7 +106,10 @@ function App() {
   // would throw React #419, the same reason viewMode's graph default is gated.
   const [convertManual, setConvertManual] = useState(false);
   const [compareManual, setCompareManual] = useState(false);
+  const [importManual, setImportManual] = useState(false);
   const [autoModalClosed, setAutoModalClosed] = useState(false);
+  // A destructive change waiting for the user's yes. See confirmReplace below.
+  const [pendingReplace, setPendingReplace] = useState<{ kind: 'replace' | 'clear'; apply: () => void } | null>(null);
 
   const lineCount = state.raw ? state.raw.split('\n').length : 0;
   const isSplit = state.splitView && state.viewMode !== 'text';
@@ -121,6 +127,7 @@ function App() {
   // auto-open doesn't immediately reappear.
   const showConvert = convertManual || (hydrated && route.convertTo != null && !autoModalClosed);
   const showCompare = compareManual || (hydrated && !!route.opensCompare && !autoModalClosed);
+  const showImport = importManual || (hydrated && route.importFrom != null && !autoModalClosed);
 
   // Kept in a ref (same pattern as JsonEditor's onChangeRef) so the shortcut
   // effect below doesn't resubscribe on every render just to see a fresh
@@ -136,9 +143,11 @@ function App() {
     function handleKeyDown(e: KeyboardEvent) {
       const mod = e.metaKey || e.ctrlKey;
       if (e.key === 'Escape') {
-        if (showPalette) setShowPalette(false);
+        if (pendingReplace) setPendingReplace(null);
+        else if (showPalette) setShowPalette(false);
         else if (showConvert) { setConvertManual(false); setAutoModalClosed(true); }
         else if (showCompare) { setCompareManual(false); setAutoModalClosed(true); }
+        else if (showImport) { setImportManual(false); setAutoModalClosed(true); }
         return;
       }
       if (!mod || e.shiftKey) return;
@@ -164,7 +173,7 @@ function App() {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.error, showPalette, showConvert, showCompare, sidebarCollapsed]);
+  }, [state.error, showPalette, showConvert, showCompare, showImport, pendingReplace, sidebarCollapsed]);
 
   // Every format/minify/sort/repair entry point (toolbar, keyboard, palette)
   // funnels through here so the event carries where it was triggered from.
@@ -194,11 +203,24 @@ function App() {
     editor.setSplitView(split);
   }
 
+  // Every path that replaces or clears the document goes through here, so the
+  // user is asked before losing work. An empty editor, or content identical to
+  // what's incoming, has nothing to lose and applies straight away.
+  function confirmReplace(next: string, apply: () => void) {
+    if (!state.raw.trim() || state.raw === next) {
+      apply();
+      return;
+    }
+    setPendingReplace({ kind: next === '' ? 'clear' : 'replace', apply });
+  }
+
   // fileName is deliberately NOT sent — only its extension, which is shape.
   function handleFileLoad(content: string, fileName: string, source: 'upload' | 'drop') {
-    const ext = fileName.includes('.') ? fileName.split('.').pop()?.toLowerCase() : undefined;
-    track('file_loaded', { source, file_extension: ext, size_bucket: sizeBucket(content.length) });
-    editor.loadContent(content);
+    confirmReplace(content, () => {
+      const ext = fileName.includes('.') ? fileName.split('.').pop()?.toLowerCase() : undefined;
+      track('file_loaded', { source, file_extension: ext, size_bucket: sizeBucket(content.length) });
+      editor.loadContent(content);
+    });
   }
 
   async function handleCopyRaw() {
@@ -220,13 +242,18 @@ function App() {
   }
 
   function handleClear() {
-    track('clear_editor', { size_bucket: sizeBucket(state.raw.length) });
-    editor.setRaw('');
+    confirmReplace('', () => {
+      track('clear_editor', { size_bucket: sizeBucket(state.raw.length) });
+      editor.setRaw('');
+    });
   }
 
   function handleLoadSample(content?: string) {
-    track('load_sample', { is_default_sample: !content });
-    editor.loadContent(content || SAMPLE_JSON);
+    const next = content || SAMPLE_JSON;
+    confirmReplace(next, () => {
+      track('load_sample', { is_default_sample: !content });
+      editor.loadContent(next);
+    });
   }
 
   function handleToggleTheme(e?: React.MouseEvent) {
@@ -234,10 +261,11 @@ function App() {
     toggleTheme(e);
   }
 
-  function handleOpenModal(modal: 'convert' | 'compare' | 'palette', source: ActionSource) {
+  function handleOpenModal(modal: 'convert' | 'compare' | 'import' | 'palette', source: ActionSource) {
     track('modal_open', { modal, source });
     if (modal === 'convert') setConvertManual(true);
     else if (modal === 'compare') setCompareManual(true);
+    else if (modal === 'import') setImportManual(true);
     else setShowPalette(true);
   }
 
@@ -248,6 +276,7 @@ function App() {
     { id: 'sort', label: 'Sort Keys Alphabetically', shortcut: `${modKey}S`, icon: ArrowUpDown, action: () => runAction('sort_keys', 'palette'), disabled: !hasContent || !!state.error },
     { id: 'repair', label: 'Auto-Fix JSON Errors', icon: Wrench, action: () => runAction('repair', 'palette'), disabled: !state.error },
     { id: 'convert', label: 'Convert JSON (XML, CSV, TSV, YAML…)', icon: Shuffle, action: () => handleOpenModal('convert', 'palette'), disabled: !hasContent || !!state.error },
+    { id: 'import', label: 'Import to JSON (CSV, XML, YAML)', icon: FileInput, action: () => handleOpenModal('import', 'palette') },
     { id: 'compare', label: 'Compare JSON Documents', icon: GitCompare, action: () => handleOpenModal('compare', 'palette'), disabled: !hasContent || !!state.error },
     { id: 'view-raw', label: 'View: Raw Editor', icon: Code2, action: () => handleViewModeChange('text', 'palette') },
     { id: 'view-tree', label: 'View: Tree Explorer', icon: Network, action: () => handleViewModeChange('tree', 'palette'), disabled: !hasContent || !!state.error },
@@ -378,10 +407,12 @@ function App() {
           )}
           <SnapshotsPanel
             raw={state.raw}
-            onLoad={(content) => {
-              track('snapshot_load', { size_bucket: sizeBucket(content.length) });
-              editor.loadContent(content);
-            }}
+            onLoad={(content) =>
+              confirmReplace(content, () => {
+                track('snapshot_load', { size_bucket: sizeBucket(content.length) });
+                editor.loadContent(content);
+              })
+            }
             collapsed={sidebarCollapsed}
           />
 
@@ -405,6 +436,7 @@ function App() {
               onFileUpload={(content, fileName) => handleFileLoad(content, fileName, 'upload')}
               onLoadSample={handleLoadSample}
               onOpenConvert={() => handleOpenModal('convert', 'toolbar')}
+              onOpenImport={() => handleOpenModal('import', 'toolbar')}
               onOpenCompare={() => handleOpenModal('compare', 'toolbar')}
             />
 
@@ -503,6 +535,38 @@ function App() {
               parsed={state.parsed}
               error={state.error}
               onClose={() => { setCompareManual(false); setAutoModalClosed(true); }}
+            />
+          ) : null}
+
+          {showImport ? (
+            <ImportModal
+              indent={state.indent}
+              initialFormat={importManual ? undefined : route.importFrom}
+              onLoad={(json) =>
+                confirmReplace(json, () => {
+                  editor.loadContent(json);
+                  setImportManual(false);
+                  setAutoModalClosed(true);
+                })
+              }
+              onClose={() => { setImportManual(false); setAutoModalClosed(true); }}
+            />
+          ) : null}
+
+          {pendingReplace ? (
+            <ConfirmDialog
+              title={pendingReplace.kind === 'clear' ? 'Clear the editor?' : 'Replace the current JSON?'}
+              message={
+                pendingReplace.kind === 'clear'
+                  ? 'This deletes everything in the editor. Save a snapshot first if you want to keep it.'
+                  : 'This replaces everything in the editor. Save a snapshot first if you want to keep it.'
+              }
+              confirmLabel={pendingReplace.kind === 'clear' ? 'Clear' : 'Replace'}
+              onConfirm={() => {
+                pendingReplace.apply();
+                setPendingReplace(null);
+              }}
+              onCancel={() => setPendingReplace(null)}
             />
           ) : null}
 
