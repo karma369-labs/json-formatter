@@ -22,6 +22,17 @@ export interface JsonEditorState {
   indent: IndentOption;
   viewMode: ViewMode;
   splitView: boolean;
+  /** Line count and UTF-8 size of `raw`, refreshed with each parse rather
+   *  than on every keystroke. Both scan the whole document, which costs
+   *  ~20ms per key press on a multi-megabyte file. */
+  lines: number;
+  bytes: number;
+  /** The `raw` that `parsed`/`error` came from. They trail `raw` by the
+   *  parse debounce, and this is how actions tell. */
+  parsedFrom: string;
+  /** Bumped when a whole new document is loaded (file, sample, snapshot,
+   *  import), never by typing, so views can reset what the user opened. */
+  docId: number;
 }
 
 type Action =
@@ -36,12 +47,24 @@ type Action =
   | { type: 'setSplitView'; split: boolean }
   | { type: 'loadContent'; raw: string };
 
-function reparse(raw: string): { parsed: unknown; error: ParseError | null } {
+type Parsed = Pick<JsonEditorState, 'parsed' | 'error' | 'lines' | 'bytes' | 'parsedFrom'>;
+
+function reparse(raw: string): Parsed {
   const result = parseJson(raw);
   return {
+    parsedFrom: raw,
     parsed: result.success ? result.value : undefined,
     error: result.success ? null : (result.error ?? null),
+    lines: raw ? raw.split('\n').length : 0,
+    bytes: new Blob([raw]).size,
   };
+}
+
+// Format, minify and sort rebuild the document from `parsed`. If the user
+// typed within the last ~250ms, `parsed` predates that typing and using it
+// would silently drop the new text, so those actions parse fresh first.
+function freshParse(state: JsonEditorState): Parsed {
+  return state.parsedFrom === state.raw ? state : reparse(state.raw);
 }
 
 function reducer(state: JsonEditorState, action: Action): JsonEditorState {
@@ -56,18 +79,23 @@ function reducer(state: JsonEditorState, action: Action): JsonEditorState {
       if (action.raw !== state.raw) return state;
       return { ...state, ...reparse(action.raw) };
 
-    case 'format':
-      if (state.error || state.parsed === undefined) return state;
-      return { ...state, raw: formatJson(state.parsed, state.indent) };
+    case 'format': {
+      const fresh = freshParse(state);
+      if (fresh.error || fresh.parsed === undefined) return { ...state, ...fresh };
+      return { ...state, ...fresh, raw: formatJson(fresh.parsed, state.indent) };
+    }
 
-    case 'minify':
-      if (state.error || state.parsed === undefined) return state;
-      return { ...state, raw: minifyJson(state.parsed) };
+    case 'minify': {
+      const fresh = freshParse(state);
+      if (fresh.error || fresh.parsed === undefined) return { ...state, ...fresh };
+      return { ...state, ...fresh, raw: minifyJson(fresh.parsed) };
+    }
 
     case 'sortKeys': {
-      if (state.error || state.parsed === undefined) return state;
-      const sorted = sortJsonKeys(state.parsed);
-      return { ...state, raw: formatJson(sorted, state.indent), parsed: sorted };
+      const fresh = freshParse(state);
+      if (fresh.error || fresh.parsed === undefined) return { ...state, ...fresh };
+      const sorted = sortJsonKeys(fresh.parsed);
+      return { ...state, ...fresh, raw: formatJson(sorted, state.indent), parsed: sorted };
     }
 
     case 'repair': {
@@ -85,7 +113,7 @@ function reducer(state: JsonEditorState, action: Action): JsonEditorState {
       return { ...state, splitView: action.split };
 
     case 'loadContent':
-      return { ...state, raw: action.raw, ...reparse(action.raw) };
+      return { ...state, raw: action.raw, docId: state.docId + 1, ...reparse(action.raw) };
 
     default:
       return state;
@@ -105,7 +133,7 @@ function reducer(state: JsonEditorState, action: Action): JsonEditorState {
 // GraphView during SSR — App gates that render behind useHydrated().
 function initState(initialView: ViewMode): JsonEditorState {
   const raw = '';
-  return { raw, indent: 2, viewMode: initialView, splitView: true, ...reparse(raw) };
+  return { raw, indent: 2, viewMode: initialView, splitView: true, docId: 0, ...reparse(raw) };
 }
 
 export function useJsonEditor(initialView: ViewMode = 'tree') {

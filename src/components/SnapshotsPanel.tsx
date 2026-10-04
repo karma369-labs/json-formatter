@@ -30,6 +30,14 @@ export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollaps
   const [name, setName] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Snapshot | null>(null);
+  // This panel re-renders on every keystroke because it takes `raw`. Counting
+  // lines inside the list map would rescan every saved snapshot each time, so
+  // the counts only recompute when the snapshot list itself changes.
+  const lineCounts = useMemo(
+    () => new Map(snapshots.map((s) => [s.id, s.content ? s.content.split('\n').length : 0])),
+    [snapshots]
+  );
+  const trimmedRaw = raw.trim();
 
   function handleSave() {
     const trimmed = name.trim();
@@ -108,8 +116,8 @@ export function SnapshotsPanel({ raw, onLoad, collapsed = false, onToggleCollaps
             </li>
           ) : (
             snapshots.map((s) => {
-              const isActive = raw.trim() !== '' && s.content.trim() === raw.trim();
-              const lineCount = s.content ? s.content.split('\n').length : 0;
+              const isActive = trimmedRaw !== '' && s.content.trim() === trimmedRaw;
+              const lineCount = lineCounts.get(s.id) ?? 0;
               const dateStr = new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
               return (

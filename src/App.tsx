@@ -111,9 +111,9 @@ function App() {
   // A destructive change waiting for the user's yes. See confirmReplace below.
   const [pendingReplace, setPendingReplace] = useState<{ kind: 'replace' | 'clear'; apply: () => void } | null>(null);
 
-  const lineCount = state.raw ? state.raw.split('\n').length : 0;
+  const lineCount = state.lines;
   const isSplit = state.splitView && state.viewMode !== 'text';
-  const byteSize = new Blob([state.raw]).size;
+  const byteSize = state.bytes;
 
   // Gated on useHydrated so the server render and the client's hydration
   // render both produce 'Ctrl+'; the real platform key swaps in right after.
@@ -489,7 +489,7 @@ function App() {
                         </div>
                       }
                     >
-                      <GraphView parsed={state.parsed} error={state.error} />
+                      <GraphView parsed={state.parsed} error={state.error} docId={state.docId} />
                     </Suspense>
                   ) : (
                     // The /graph-viewer route seeds viewMode to 'graph', but
