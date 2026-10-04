@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { AlertCircle, ChevronRight, Check, Copy, FileJson, Maximize2, Minimize2, Zap, ZapOff } from 'lucide-react';
 import type { ParseError } from '../lib/jsonParser';
 import { isHexColor } from '../lib/color';
@@ -8,6 +8,8 @@ import './GraphView.css';
 interface GraphViewProps {
   parsed: unknown;
   error: ParseError | null;
+  /** Changes only when a new document is loaded, not on edits. */
+  docId: number;
 }
 
 type JsonType = 'null' | 'array' | 'object' | 'string' | 'number' | 'boolean';
@@ -22,6 +24,16 @@ function isContainerType(type: JsonType): type is 'object' | 'array' {
   return type === 'object' || type === 'array';
 }
 
+// Drawing every node of a large document froze the tab. A 15k-item array
+// meant 765k DOM elements and a 10s mount. These caps keep the graph to a
+// size a person can read anyway.
+/** Rows a card shows before its "Show more" button. */
+const ROW_PAGE = 100;
+/** Cards drawn in total, however much is expanded. */
+const MAX_CARDS = 300;
+/** First-level children opened by default when a document loads. */
+const INITIAL_EXPAND = 20;
+
 interface CardEntry {
   key: string;
   value: unknown;
@@ -35,7 +47,14 @@ interface CardNode {
   depth: number;
   type: 'object' | 'array';
   entries: CardEntry[];
+  /** Entries past this card's row limit, not rendered. */
+  hiddenRows: number;
   originRowId?: string;
+}
+
+interface CardBudget {
+  left: number;
+  truncated: boolean;
 }
 
 function collectNodes(
@@ -45,15 +64,24 @@ function collectNodes(
   keyName: string | undefined,
   originRowId: string | undefined,
   expanded: Set<string>,
+  rowLimits: Map<string, number>,
+  budget: CardBudget,
   columns: CardNode[][],
 ) {
   const type = typeOf(value);
   if (!isContainerType(type)) return;
+  if (budget.left <= 0) {
+    budget.truncated = true;
+    return;
+  }
+  budget.left--;
 
   const isArr = type === 'array';
+  const limit = rowLimits.get(path) ?? ROW_PAGE;
+  const total = isArr ? (value as unknown[]).length : Object.keys(value as object).length;
   const rawEntries = isArr
-    ? (value as unknown[]).map((v, i) => [String(i), v] as const)
-    : Object.entries(value as Record<string, unknown>);
+    ? (value as unknown[]).slice(0, limit).map((v, i) => [String(i), v] as const)
+    : Object.entries(value as Record<string, unknown>).slice(0, limit);
 
   const entries: CardEntry[] = rawEntries.map(([key, v]) => {
     const t = typeOf(v);
@@ -61,13 +89,13 @@ function collectNodes(
     return { key, value: v, type: t, childPath };
   });
 
-  const node: CardNode = { path, keyName, depth, type, entries, originRowId };
+  const node: CardNode = { path, keyName, depth, type, entries, hiddenRows: total - entries.length, originRowId };
   if (!columns[depth]) columns[depth] = [];
   columns[depth].push(node);
 
   for (const entry of entries) {
     if (entry.childPath && expanded.has(entry.childPath)) {
-      collectNodes(entry.value, entry.childPath, depth + 1, entry.key, `${path}::${entry.key}`, expanded, columns);
+      collectNodes(entry.value, entry.childPath, depth + 1, entry.key, `${path}::${entry.key}`, expanded, rowLimits, budget, columns);
     }
   }
 }
@@ -81,6 +109,7 @@ function collectFirstLevelPaths(value: unknown, path: string): Set<string> {
     ? (value as unknown[]).map((v, i) => [String(i), v] as const)
     : Object.entries(value as Record<string, unknown>);
   for (const [key, v] of entries) {
+    if (acc.size >= INITIAL_EXPAND) break;
     if (isContainerType(typeOf(v))) {
       acc.add(isArr ? `${path}[${key}]` : `${path}.${key}`);
     }
@@ -133,19 +162,21 @@ function GraphCard({
   node,
   isExpanded,
   onToggleRow,
+  onShowMore,
   registerCardRef,
   registerRowRef,
 }: {
   node: CardNode;
   isExpanded: (path: string) => boolean;
   onToggleRow: (path: string) => void;
+  onShowMore: (path: string) => void;
   registerCardRef: (path: string, el: HTMLDivElement | null) => void;
   registerRowRef: (id: string, el: HTMLElement | null) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const openBracket = node.type === 'array' ? '[' : '{';
   const closeBracket = node.type === 'array' ? ']' : '}';
-  const summary = `${node.entries.length} ${node.type === 'array' ? 'items' : 'keys'}`;
+  const summary = `${node.entries.length + node.hiddenRows} ${node.type === 'array' ? 'items' : 'keys'}`;
 
   async function handleCopy(e: React.MouseEvent) {
     e.stopPropagation();
@@ -209,6 +240,15 @@ function GraphCard({
               </button>
             );
           })}
+          {node.hiddenRows > 0 ? (
+            <button
+              type="button"
+              className="graph-row graph-row-toggle graph-show-more"
+              onClick={() => onShowMore(node.path)}
+            >
+              Show {Math.min(ROW_PAGE, node.hiddenRows)} more of {node.hiddenRows.toLocaleString()}
+            </button>
+          ) : null}
         </div>
       ) : (
         <div className="graph-card-body graph-card-empty">empty {node.type}</div>
@@ -217,7 +257,16 @@ function GraphCard({
   );
 }
 
-function GraphCanvas({ parsed }: { parsed: unknown }) {
+interface GraphCanvasProps {
+  parsed: unknown;
+  /** Open cards by path, or null for the default first-level view. */
+  expanded: Set<string> | null;
+  setExpanded: Dispatch<SetStateAction<Set<string> | null>>;
+  rowLimits: Map<string, number>;
+  setRowLimits: Dispatch<SetStateAction<Map<string, number>>>;
+}
+
+function GraphCanvas({ parsed, expanded, setExpanded, rowLimits, setRowLimits }: GraphCanvasProps) {
   // "Live Transform": while on, the canvas tracks `parsed` directly. While off,
   // the canvas keeps rendering the last-synced snapshot so edits to a large
   // document don't force a full graph relayout on every keystroke.
@@ -228,14 +277,10 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
     setDisplayParsed(parsed);
   }
 
-  const [expanded, setExpanded] = useState<Set<string>>(() => collectFirstLevelPaths(displayParsed, '$'));
-
-  // Reset expansion state whenever a structurally new document is displayed.
-  const [trackedParsed, setTrackedParsed] = useState(displayParsed);
-  if (trackedParsed !== displayParsed) {
-    setTrackedParsed(displayParsed);
-    setExpanded(collectFirstLevelPaths(displayParsed, '$'));
-  }
+  const openPaths = useMemo(
+    () => expanded ?? collectFirstLevelPaths(displayParsed, '$'),
+    [expanded, displayParsed]
+  );
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef(new Map<string, HTMLDivElement>());
@@ -243,11 +288,12 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [svgSize, setSvgSize] = useState({ width: 0, height: 0 });
 
-  const columns = useMemo(() => {
+  const { columns, truncated } = useMemo(() => {
     const cols: CardNode[][] = [];
-    collectNodes(displayParsed, '$', 0, undefined, undefined, expanded, cols);
-    return cols;
-  }, [displayParsed, expanded]);
+    const budget: CardBudget = { left: MAX_CARDS, truncated: false };
+    collectNodes(displayParsed, '$', 0, undefined, undefined, openPaths, rowLimits, budget, cols);
+    return { columns: cols, truncated: budget.truncated };
+  }, [displayParsed, openPaths, rowLimits]);
 
   const flatNodes = useMemo(() => columns.flat(), [columns]);
 
@@ -268,11 +314,16 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
 
         const rowRect = rowEl.getBoundingClientRect();
         const cardRect = cardEl.getBoundingClientRect();
+        // A long card scrolls its own body. Pin edges from rows scrolled out
+        // of view to the body's visible edge so they don't trail off.
+        const bodyRect = rowEl.parentElement?.getBoundingClientRect();
+        let rowY = rowRect.top + rowRect.height / 2;
+        if (bodyRect) rowY = Math.min(Math.max(rowY, bodyRect.top), bodyRect.bottom);
 
         nextEdges.push({
           id: node.path,
           x1: rowRect.right - containerRect.left + container.scrollLeft,
-          y1: rowRect.top + rowRect.height / 2 - containerRect.top + container.scrollTop,
+          y1: rowY - containerRect.top + container.scrollTop,
           x2: cardRect.left - containerRect.left + container.scrollLeft,
           y2: cardRect.top + CARD_HEADER_HEIGHT / 2 - containerRect.top + container.scrollTop,
           label: node.keyName,
@@ -283,18 +334,36 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
       setSvgSize({ width: container.scrollWidth, height: container.scrollHeight });
     }
 
+    // Card bodies scroll on their own. Scroll events don't bubble, so a
+    // capture listener catches them, batched to one recompute per frame.
+    let frame = 0;
+    function onCardScroll(e: Event) {
+      if (e.target === container) return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(recompute);
+    }
+
     recompute();
     window.addEventListener('resize', recompute);
-    return () => window.removeEventListener('resize', recompute);
+    container.addEventListener('scroll', onCardScroll, true);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', recompute);
+      container.removeEventListener('scroll', onCardScroll, true);
+    };
   }, [flatNodes]);
 
   function toggleRow(path: string) {
     setExpanded((prev) => {
-      const next = new Set(prev);
+      const next = new Set(prev ?? openPaths);
       if (next.has(path)) next.delete(path);
       else next.add(path);
       return next;
     });
+  }
+
+  function showMore(path: string) {
+    setRowLimits((prev) => new Map(prev).set(path, (prev.get(path) ?? ROW_PAGE) + ROW_PAGE));
   }
 
   function expandAll() {
@@ -322,6 +391,12 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
           <Minimize2 size={12} />
           <span>Collapse All</span>
         </button>
+
+        {truncated ? (
+          <span className="graph-truncated" role="status">
+            Showing the first {MAX_CARDS} cards. Collapse some to see more.
+          </span>
+        ) : null}
 
         <button
           type="button"
@@ -391,8 +466,9 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
                 <GraphCard
                   key={node.path}
                   node={node}
-                  isExpanded={(path) => expanded.has(path)}
+                  isExpanded={(path) => openPaths.has(path)}
                   onToggleRow={toggleRow}
+                  onShowMore={showMore}
                   registerCardRef={(path, el) => {
                     if (el) cardRefs.current.set(path, el);
                     else cardRefs.current.delete(path);
@@ -411,7 +487,19 @@ function GraphCanvas({ parsed }: { parsed: unknown }) {
   );
 }
 
-export function GraphView({ parsed, error }: GraphViewProps) {
+export function GraphView({ parsed, error, docId }: GraphViewProps) {
+  // Open cards live here rather than in GraphCanvas, which unmounts whenever
+  // a half-typed edit makes the JSON invalid. Edits keep what the user
+  // opened. Only loading a different document resets it, like the tree does.
+  const [expanded, setExpanded] = useState<Set<string> | null>(null);
+  const [rowLimits, setRowLimits] = useState<Map<string, number>>(() => new Map());
+  const [trackedDocId, setTrackedDocId] = useState(docId);
+  if (trackedDocId !== docId) {
+    setTrackedDocId(docId);
+    setExpanded(null);
+    setRowLimits(new Map());
+  }
+
   if (error) {
     return (
       <div className="tree-empty">
@@ -455,5 +543,13 @@ export function GraphView({ parsed, error }: GraphViewProps) {
     );
   }
 
-  return <GraphCanvas parsed={parsed} />;
+  return (
+    <GraphCanvas
+      parsed={parsed}
+      expanded={expanded}
+      setExpanded={setExpanded}
+      rowLimits={rowLimits}
+      setRowLimits={setRowLimits}
+    />
+  );
 }

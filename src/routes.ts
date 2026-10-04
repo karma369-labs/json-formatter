@@ -35,6 +35,8 @@ export interface RouteMeta {
   opensCompare?: boolean;
   /** Open the Convert modal on load, preselecting this target format. */
   convertTo?: 'xml' | 'yaml' | 'csv' | 'tsv';
+  /** Open the Import modal on load, preselecting this source format. */
+  importFrom?: 'csv' | 'xml' | 'yaml';
 }
 
 export const ROUTES: RouteMeta[] = [
@@ -172,6 +174,39 @@ export const ROUTES: RouteMeta[] = [
       'Paste an array of JSON objects and convert it to tab-separated values.',
     defaultView: 'text',
     convertTo: 'tsv',
+  },
+  {
+    path: '/converter/csv-to-json',
+    title: 'CSV to JSON Converter — Online & Free | JSON Studio',
+    description:
+      'Convert CSV or TSV to JSON online. Header rows become keys, and numbers and booleans are detected. Free and fully client-side.',
+    h1: 'CSV to JSON Converter',
+    intro:
+      'Paste CSV or TSV, or open a file, and get an array of JSON objects keyed by the header row.',
+    defaultView: 'text',
+    importFrom: 'csv',
+  },
+  {
+    path: '/converter/xml-to-json',
+    title: 'XML to JSON Converter — Online & Free | JSON Studio',
+    description:
+      'Convert XML to JSON online. Attributes, repeated elements, and text content all map to clean JSON. Free and fully client-side.',
+    h1: 'XML to JSON Converter',
+    intro:
+      'Paste XML and get JSON back. Attributes become "@" keys and repeated tags become arrays.',
+    defaultView: 'text',
+    importFrom: 'xml',
+  },
+  {
+    path: '/converter/yaml-to-json',
+    title: 'YAML to JSON Converter — Online & Free | JSON Studio',
+    description:
+      'Convert YAML to JSON online, including multi-document files. Free, instant, and fully client-side.',
+    h1: 'YAML to JSON Converter',
+    intro:
+      'Paste YAML config and get the equivalent JSON, ready to load into the editor or copy.',
+    defaultView: 'text',
+    importFrom: 'yaml',
   },
 ];
 

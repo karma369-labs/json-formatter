@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Shuffle,
   GitCompare,
+  FileInput,
 } from 'lucide-react';
 import './Toolbar.css';
 import type { IndentOption, ParseError } from '../lib/jsonParser';
@@ -40,6 +41,7 @@ interface ToolbarProps {
   onFileUpload: (content: string, fileName: string) => void;
   onLoadSample?: (content?: string) => void;
   onOpenConvert?: () => void;
+  onOpenImport?: () => void;
   onOpenCompare?: () => void;
 }
 
@@ -66,6 +68,7 @@ export function Toolbar({
   onFileUpload,
   onLoadSample,
   onOpenConvert,
+  onOpenImport,
   onOpenCompare,
 }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -240,6 +243,17 @@ export function Toolbar({
         >
           <Shuffle size={13} />
           <span>Convert</span>
+        </button>
+
+        <button
+          type="button"
+          className="button-secondary"
+          onClick={onOpenImport}
+          disabled={!onOpenImport}
+          title="Convert CSV, TSV, XML, or YAML into JSON"
+        >
+          <FileInput size={13} />
+          <span>Import</span>
         </button>
 
         <button
