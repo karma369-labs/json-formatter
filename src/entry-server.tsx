@@ -33,4 +33,4 @@ export function render(url: string): string {
 // Re-exported so prerender.mjs reads the route table off this compiled bundle
 // rather than keeping its own copy — one source of truth for which files to
 // emit and what <head> to stamp into each.
-export { ROUTES, SITE_ORIGIN } from './routes';
+export { NOT_FOUND_ROUTE, ROUTES, SITE_ORIGIN } from './routes';

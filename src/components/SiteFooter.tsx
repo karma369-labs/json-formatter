@@ -6,7 +6,8 @@ import './SiteFooter.css';
 export function SiteFooter() {
   return (
     <footer className="site-footer">
-      <span>JSON Studio — client-side JSON tools.</span>
+      <a href="/">JSONSpace</a>
+      <span>Free JSON tools that run in your browser.</span>
       <span className="site-footer-sep">•</span>
       <span>
         Related tool:{' '}

@@ -173,7 +173,7 @@ async function main() {
   await checkThemeConsistency(template);
 
   const server = await import(pathToFileURL(join(ssrDir, 'entry-server.js')).href);
-  const { ROUTES, SITE_ORIGIN } = server;
+  const { NOT_FOUND_ROUTE, ROUTES, SITE_ORIGIN } = server;
 
   for (const route of ROUTES) {
     const appHtml = server.render(route.path);
@@ -193,6 +193,29 @@ async function main() {
     await mkdir(dirname(outPath), { recursive: true });
     await writeFile(outPath, html, 'utf8');
     console.log(`  prerendered ${route.path} -> ${outPath.replace(root, '.')}`);
+  }
+
+  // The page Apache serves, with a 404 status, for any URL that has none
+  // (ErrorDocument in public/.htaccess). The app resolves every unknown path to
+  // NOT_FOUND_ROUTE, so hydration matches at whatever URL it's served on. It
+  // has no single address, so it gets noindex in place of a canonical.
+  {
+    const withHead = applyHead(template, NOT_FOUND_ROUTE, SITE_ORIGIN)
+      .replace(/\s*<link rel="canonical" href="[^"]*" \/>/, '')
+      .replace(/<meta name="robots" content="[^"]*" \/>/, '<meta name="robots" content="noindex" />');
+    if (withHead.includes('rel="canonical"') || !withHead.includes('content="noindex"')) {
+      throw new Error(
+        'prerender: could not swap the canonical link for noindex on 404.html. ' +
+          'The template head changed shape. Update this replace to match.'
+      );
+    }
+    const html = withHead.replace(
+      ROOT_DIV,
+      () => `<div id="root">${server.render(NOT_FOUND_ROUTE.path)}</div>`
+    );
+    const outPath = join(distDir, '404.html');
+    await writeFile(outPath, html, 'utf8');
+    console.log(`  prerendered 404 -> ${outPath.replace(root, '.')}`);
   }
 
   // Regenerate sitemap.xml from the same route table so it can't drift from the

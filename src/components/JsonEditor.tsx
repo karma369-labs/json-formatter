@@ -138,7 +138,15 @@ export function JsonEditor({ value, onChange }: JsonEditorProps) {
     });
 
     viewRef.current = view;
+
+    // Leaving the page skips the unmount below, so hand over any unsent edit
+    // here. Capture phase, so this runs before useJsonEditor's pagehide save
+    // even though the editor remounts, and so registers, after it.
+    const onPageHide = () => flush(view);
+    window.addEventListener('pagehide', onPageHide, { capture: true });
+
     return () => {
+      window.removeEventListener('pagehide', onPageHide, { capture: true });
       // Switching to tree-only view unmounts the editor. Hand over any
       // unsent edit first so it isn't lost.
       flush(view);

@@ -29,6 +29,7 @@ import { FileDropZone } from './components/FileDropZone';
 import { JsonEditor } from './components/JsonEditor';
 import { SiteFooter } from './components/SiteFooter';
 import { SnapshotsPanel } from './components/SnapshotsPanel';
+import { ToolDirectory, ToolsMenu } from './components/ToolNav';
 import { Toolbar } from './components/Toolbar';
 import { TreeView } from './components/TreeView';
 import type { Command } from './components/CommandPalette';
@@ -47,7 +48,7 @@ const CommandPalette = lazy(() => import('./components/CommandPalette').then((m)
 
 const SAMPLE_JSON = JSON.stringify(
   {
-    name: "json-studio",
+    name: "jsonspace",
     version: "1.0.0",
     description: "Fast, client-side JSON editor and inspector.",
     main: "src/main.tsx",
@@ -193,7 +194,7 @@ function App() {
   function handleViewModeChange(mode: ViewMode, source: ActionSource) {
     if (mode !== state.viewMode) {
       track('view_mode_change', { view_mode: mode, source });
-      trackPageView(`/${mode}`, `JSON Studio — ${VIEW_MODE_TITLES[mode]}`);
+      trackPageView(`/${mode}`, `JSONSpace — ${VIEW_MODE_TITLES[mode]}`);
     }
     editor.setViewMode(mode);
   }
@@ -327,7 +328,8 @@ function App() {
             >
               {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
             </button>
-            <span>JSON Studio</span>
+            <a href="/" className="brand-link">JSONSpace</a>
+            <ToolsMenu currentPath={route.path} />
           </div>
 
           <div className="top-nav-meta">
@@ -505,74 +507,78 @@ function App() {
             </div>
           </main>
         </div>
-
-        <section className="tool-intro" aria-label="About this tool">
-          <h1>{route.h1}</h1>
-          <p>{route.intro}</p>
-        </section>
-
-        <SiteFooter />
-
-        <Suspense
-          fallback={
-            <div className="overlay-loading-backdrop">
-              <div className="suspense-spinner" />
-            </div>
-          }
-        >
-          {showConvert ? (
-            <ConvertModal
-              raw={state.raw}
-              parsed={state.parsed}
-              initialFormat={convertManual ? undefined : route.convertTo}
-              onClose={() => { setConvertManual(false); setAutoModalClosed(true); }}
-            />
-          ) : null}
-
-          {showCompare ? (
-            <CompareModal
-              raw={state.raw}
-              parsed={state.parsed}
-              error={state.error}
-              onClose={() => { setCompareManual(false); setAutoModalClosed(true); }}
-            />
-          ) : null}
-
-          {showImport ? (
-            <ImportModal
-              indent={state.indent}
-              initialFormat={importManual ? undefined : route.importFrom}
-              onLoad={(json) =>
-                confirmReplace(json, () => {
-                  editor.loadContent(json);
-                  setImportManual(false);
-                  setAutoModalClosed(true);
-                })
-              }
-              onClose={() => { setImportManual(false); setAutoModalClosed(true); }}
-            />
-          ) : null}
-
-          {pendingReplace ? (
-            <ConfirmDialog
-              title={pendingReplace.kind === 'clear' ? 'Clear the editor?' : 'Replace the current JSON?'}
-              message={
-                pendingReplace.kind === 'clear'
-                  ? 'This deletes everything in the editor. Save a snapshot first if you want to keep it.'
-                  : 'This replaces everything in the editor. Save a snapshot first if you want to keep it.'
-              }
-              confirmLabel={pendingReplace.kind === 'clear' ? 'Clear' : 'Replace'}
-              onConfirm={() => {
-                pendingReplace.apply();
-                setPendingReplace(null);
-              }}
-              onCancel={() => setPendingReplace(null)}
-            />
-          ) : null}
-
-          {showPalette ? <CommandPalette commands={commands} onClose={() => setShowPalette(false)} /> : null}
-        </Suspense>
       </div>
+
+      {/* Below the fold. The tool owns the first screen and the page scrolls
+          to the copy, the links to every other page, and the footer. */}
+      <section className="tool-intro" aria-label="About this tool">
+        <h1>{route.h1}</h1>
+        <p>{route.intro}</p>
+      </section>
+
+      <ToolDirectory currentPath={route.path} />
+
+      <SiteFooter />
+
+      <Suspense
+        fallback={
+          <div className="overlay-loading-backdrop">
+            <div className="suspense-spinner" />
+          </div>
+        }
+      >
+        {showConvert ? (
+          <ConvertModal
+            raw={state.raw}
+            parsed={state.parsed}
+            initialFormat={convertManual ? undefined : route.convertTo}
+            onClose={() => { setConvertManual(false); setAutoModalClosed(true); }}
+          />
+        ) : null}
+
+        {showCompare ? (
+          <CompareModal
+            raw={state.raw}
+            parsed={state.parsed}
+            error={state.error}
+            onClose={() => { setCompareManual(false); setAutoModalClosed(true); }}
+          />
+        ) : null}
+
+        {showImport ? (
+          <ImportModal
+            indent={state.indent}
+            initialFormat={importManual ? undefined : route.importFrom}
+            onLoad={(json) =>
+              confirmReplace(json, () => {
+                editor.loadContent(json);
+                setImportManual(false);
+                setAutoModalClosed(true);
+              })
+            }
+            onClose={() => { setImportManual(false); setAutoModalClosed(true); }}
+          />
+        ) : null}
+
+        {pendingReplace ? (
+          <ConfirmDialog
+            title={pendingReplace.kind === 'clear' ? 'Clear the editor?' : 'Replace the current JSON?'}
+            message={
+              pendingReplace.kind === 'clear'
+                ? 'This deletes everything in the editor. Save a snapshot first if you want to keep it.'
+                : 'This replaces everything in the editor. Save a snapshot first if you want to keep it.'
+            }
+            confirmLabel={pendingReplace.kind === 'clear' ? 'Clear' : 'Replace'}
+            onConfirm={() => {
+              pendingReplace.apply();
+              setPendingReplace(null);
+            }}
+            onCancel={() => setPendingReplace(null)}
+          />
+        ) : null}
+
+        {showPalette ? <CommandPalette commands={commands} onClose={() => setShowPalette(false)} /> : null}
+      </Suspense>
     </FileDropZone>
   );
 }

@@ -1,12 +1,13 @@
-# JSON Studio — Apache config for Namecheap shared hosting.
+# JSONSpace — Apache config for Namecheap shared hosting.
 # Vite copies everything in public/ into dist/, so this ships to public_html.
 #
 # Goal: one canonical URL per page (https + www + no trailing slash), each tool
 # served from its own prerendered dist/<path>/index.html, and any unknown path
-# falling back to the app shell so client-side routing still boots.
+# answered with a real 404 status and the prerendered 404 page.
 
-Options -MultiViews
+Options -MultiViews -Indexes
 DirectoryIndex index.html
+ErrorDocument 404 /404.html
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
@@ -16,6 +17,15 @@ DirectoryIndex index.html
   RewriteCond %{HTTPS} off [OR]
   RewriteCond %{HTTP_HOST} !^www\. [NC]
   RewriteRule ^ https://www.jsonspace.io%{REQUEST_URI} [L,R=301]
+
+  # /index.html and /validator/index.html are the same pages as / and
+  # /validator, so send them to the one canonical URL. THE_REQUEST is the
+  # browser's own request line, which the internal index.html rewrite below
+  # never changes, so these can't loop.
+  RewriteCond %{THE_REQUEST} \s/index\.html[\s?] [NC]
+  RewriteRule ^ / [R=301,L]
+  RewriteCond %{THE_REQUEST} \s/(.+)/index\.html[\s?] [NC]
+  RewriteRule ^ /%1 [R=301,L]
 
   # Drop trailing slashes (except the root) so /validator/ 301s to /validator,
   # matching the no-trailing-slash canonical tags the prerender stamps in.
@@ -28,11 +38,13 @@ DirectoryIndex index.html
   RewriteCond %{REQUEST_FILENAME}/index.html -f
   RewriteRule ^ %{REQUEST_URI}/index.html [L]
 
-  # SPA fallback: any path that is not a real file or directory and has no
-  # prerendered index.html loads the home shell so React can route client-side.
+  # Anything left that isn't a real file has no page, so answer 404. Serving
+  # the home page with a 200 here made every typo URL look like a duplicate of
+  # the home page to search engines. This also covers folders with no page of
+  # their own, such as /converter and /assets.
+  RewriteCond %{REQUEST_URI} !^/$
   RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ /index.html [L]
+  RewriteRule ^ - [R=404,L]
 </IfModule>
 
 # Hashed asset filenames are immutable — cache them hard. HTML is regenerated

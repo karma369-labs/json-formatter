@@ -1,8 +1,8 @@
-# JSON Studio
+# JSONSpace
 
 Fast, client-side JSON editor, inspector, and toolkit.
 
-JSON Studio is built for speed and privacy — everything runs entirely in your browser with zero server round-trips.
+JSONSpace is built for speed and privacy — everything runs entirely in your browser with zero server round-trips.
 
 ---
 
