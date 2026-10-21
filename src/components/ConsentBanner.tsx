@@ -41,7 +41,7 @@ export function ConsentBanner() {
       <div className="consent-banner-copy">
         <Cookie size={16} className="consent-banner-icon" aria-hidden="true" />
         <p>
-          JSON Studio uses analytics cookies to understand which tools get used. Your JSON never
+          JSONSpace uses analytics cookies to understand which tools get used. Your JSON never
           leaves your browser either way.
         </p>
       </div>

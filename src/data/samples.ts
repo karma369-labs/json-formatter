@@ -68,7 +68,7 @@ export const TEST_PAYLOADS: SamplePayload[] = [
     description: 'Contains unquoted keys, single quotes, trailing commas, missing quotes for Auto-Fix testing',
     content: `{
   // Invalid single quotes & unquoted keys
-  name: 'JSON Studio',
+  name: 'JSONSpace',
   version: '1.2.0',
   description: 'Fast client-side JSON editor',
   features: [
@@ -210,7 +210,7 @@ export const TEST_PAYLOADS: SamplePayload[] = [
                     projects: {
                       active: [
                         { id: "proj_101", title: "Design System Migration", progress: 0.85 },
-                        { id: "proj_102", title: "JSON Studio v2", progress: 0.60 }
+                        { id: "proj_102", title: "JSONSpace v2", progress: 0.60 }
                       ],
                       archived: []
                     }

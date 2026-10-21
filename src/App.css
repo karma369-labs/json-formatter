@@ -241,11 +241,22 @@ button, input, select {
   padding: 0;
 }
 
+/* The page scrolls. The tool fills exactly the first screen, and the copy,
+   tool links and footer sit below it. */
+body {
+  background-color: var(--canvas);
+}
+
 .app-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 100vw;
+  /* Mobile browsers count the hidden URL bar in 100vh, pushing the bottom of
+     the editor off screen. dvh tracks the visible height instead. */
+  height: 100dvh;
+  /* Not 100vw: that includes the page's vertical scrollbar and would add a
+     horizontal one. */
+  width: 100%;
   overflow: hidden;
   background-color: var(--canvas);
 }
@@ -272,6 +283,15 @@ button, input, select {
   font-weight: 600;
   letter-spacing: -0.015em;
   color: var(--ink);
+}
+
+.brand-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-link:hover {
+  color: var(--primary);
 }
 
 .brand-icon {

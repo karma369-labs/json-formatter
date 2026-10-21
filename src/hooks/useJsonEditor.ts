@@ -147,12 +147,28 @@ export function useJsonEditor(initialView: ViewMode = 'tree') {
     if (saved) dispatch({ type: 'loadContent', raw: saved });
   }, []);
 
+  // The newest text, for the pagehide save below. setRaw writes it directly
+  // because the editor's own pagehide flush calls setRaw while the page is
+  // unloading, and no render or effect runs after that.
+  const latestRaw = useRef(state.raw);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
+    latestRaw.current = state.raw;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => saveCurrentDoc(state.raw), 500);
     return () => clearTimeout(saveTimer.current);
   }, [state.raw]);
+
+  // Clicking a link to another tool unloads the page before the debounced
+  // save fires, and the next page restores from that save. Write it now.
+  useEffect(() => {
+    const save = () => {
+      if (!restored.current) return;
+      saveCurrentDoc(latestRaw.current);
+    };
+    window.addEventListener('pagehide', save);
+    return () => window.removeEventListener('pagehide', save);
+  }, []);
 
   const parseTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
@@ -163,7 +179,10 @@ export function useJsonEditor(initialView: ViewMode = 'tree') {
 
   return {
     state,
-    setRaw: (raw: string) => dispatch({ type: 'setRaw', raw }),
+    setRaw: (raw: string) => {
+      latestRaw.current = raw;
+      dispatch({ type: 'setRaw', raw });
+    },
     format: () => dispatch({ type: 'format' }),
     minify: () => dispatch({ type: 'minify' }),
     sortKeys: () => dispatch({ type: 'sortKeys' }),
