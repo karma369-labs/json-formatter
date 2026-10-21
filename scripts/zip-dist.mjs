@@ -1,5 +1,5 @@
 /**
- * Zips dist/ for upload through cPanel's File Manager, as dist-<commit>.zip in
+ * Zips dist/ for upload through cPanel's File Manager, as jsonspace-<commit>.zip in
  * the project root.
  *
  * cPanel's extractor applies the Unix permissions stored in the zip. Windows
@@ -51,7 +51,7 @@ try {
 
 const commit = execSync('git rev-parse --short HEAD', { cwd: root }).toString().trim();
 const dirty = execSync('git status --porcelain', { cwd: root }).toString().trim() !== '';
-const outName = `dist-${commit}${dirty ? '-dirty' : ''}.zip`;
+const outName = `jsonspace-${commit}.zip`;
 
 const { time, day } = dosDateTime(new Date());
 const locals = [];
@@ -118,4 +118,4 @@ end.writeUInt16LE(0, 20);
 
 await writeFile(join(root, outName), Buffer.concat([...locals, ...centrals, end]));
 console.log(`wrote ${outName} (${count} entries, files 644, folders 755)`);
-if (dirty) console.log('note: uncommitted changes are included; the name says -dirty.');
+if (dirty) console.log(`note: includes uncommitted changes, so it is not exactly ${commit}.`);
